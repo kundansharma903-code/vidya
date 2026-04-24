@@ -1,0 +1,2557 @@
+# VIDYA — Complete Blueprint
+
+**Version:** 1.0
+**Date:** April 24, 2026
+**Founder:** Kavish Sharma
+**Companion to:** VIDYA_CONTEXT.md
+**Total pages:** 48
+**Total database tables:** 25
+**Target timeline:** 5-6 weeks to production pilot
+
+---
+
+## BLUEPRINT PURPOSE
+
+This document is the **buildable specification** for Vidya. While VIDYA_CONTEXT.md captures the vision, this blueprint captures the implementation. Every page, every table, every API endpoint is listed here. Claude Code uses this as the build checklist.
+
+---
+
+## TABLE OF CONTENTS
+
+**Part 1: Foundation**
+1. [Technical Architecture](#1-technical-architecture)
+2. [Database Schema](#2-database-schema) (25 tables)
+3. [Authentication & Authorization](#3-authentication--authorization)
+4. [Multi-Tenant Pattern](#4-multi-tenant-pattern)
+
+**Part 2: Page Inventory (48 pages)**
+5. [Public Pages](#5-public-pages) (2 pages)
+6. [Admin Pages](#6-admin-pages) (14 pages)
+7. [Academic Head Pages](#7-academic-head-pages) (9 pages)
+8. [Owner Pages](#8-owner-pages) (6 pages)
+9. [Teacher Pages](#9-teacher-pages) (7 pages)
+10. [Typist Pages](#10-typist-pages) (5 pages)
+11. [Sub-Admin Pages](#11-sub-admin-pages) (5 pages)
+
+**Part 3: Core Systems**
+12. [Test Workflow System](#12-test-workflow-system)
+13. [OMR Response Processing](#13-omr-response-processing)
+14. [Mastery Calculation Engine](#14-mastery-calculation-engine)
+15. [Reports Engine](#15-reports-engine)
+16. [AI Integration (Gemini)](#16-ai-integration-gemini)
+17. [Notifications System](#17-notifications-system)
+18. [Activity Log System](#18-activity-log-system)
+
+**Part 4: Technical Details**
+19. [API Endpoints](#19-api-endpoints)
+20. [Excel Templates](#20-excel-templates)
+21. [Seeders](#21-seeders)
+22. [Pre-Loaded Data (NEET + JEE Curriculum)](#22-pre-loaded-data)
+
+**Part 5: Build Plan**
+23. [Week-by-Week Build Schedule](#23-week-by-week-build-schedule)
+24. [Testing Strategy](#24-testing-strategy)
+25. [Deployment Plan](#25-deployment-plan)
+
+---
+
+# PART 1: FOUNDATION
+
+## 1. TECHNICAL ARCHITECTURE
+
+### 1.1 System Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 CLIENT (Browser)                    │
+│  Blade Templates + Tailwind + Alpine.js + Chart.js │
+└─────────────────────┬───────────────────────────────┘
+                      │ HTTPS
+┌─────────────────────▼───────────────────────────────┐
+│              LARAVEL APPLICATION                    │
+│  ┌─────────────────────────────────────────────┐   │
+│  │  Routes (web.php) → Middleware → Controller │   │
+│  └─────────────┬───────────────────────────────┘   │
+│                │                                    │
+│  ┌─────────────▼───────────────────────────────┐   │
+│  │  Services Layer                             │   │
+│  │  - AiInsightService                         │   │
+│  │  - MasteryCalculationService                │   │
+│  │  - OmrProcessingService                     │   │
+│  │  - NotificationService                      │   │
+│  │  - InstituteHelper (multi-tenant)           │   │
+│  └─────────────┬───────────────────────────────┘   │
+│                │                                    │
+│  ┌─────────────▼───────────────────────────────┐   │
+│  │  Eloquent Models → Database                 │   │
+│  └─────────────┬───────────────────────────────┘   │
+└────────────────┼───────────────────────────────────┘
+                 │
+       ┌─────────┴──────────┐
+       │                    │
+┌──────▼──────┐    ┌────────▼───────┐
+│   MySQL 8   │    │  Gemini API    │
+│  (primary)  │    │  (2.5 Flash)   │
+└─────────────┘    └────────────────┘
+```
+
+### 1.2 Request Flow
+
+```
+User → HTTPS → Hostinger Server → Nginx → PHP-FPM
+                                    ↓
+                              Laravel Router
+                                    ↓
+                              Auth Middleware (check login)
+                                    ↓
+                              Role Middleware (check permission)
+                                    ↓
+                              Institute Scope Middleware (tenant)
+                                    ↓
+                              Controller Action
+                                    ↓
+                              Service Layer (business logic)
+                                    ↓
+                              Model Layer (Eloquent)
+                                    ↓
+                              MySQL Query
+                                    ↓
+                              View (Blade template)
+                                    ↓
+                              HTTP Response
+                                    ↓
+                              Browser render
+```
+
+### 1.3 Folder Structure (Laravel 13)
+
+```
+vidya/
+├── app/
+│   ├── Console/
+│   │   └── Commands/
+│   │       ├── FreshInstall.php
+│   │       ├── SeedCurriculumNEET.php
+│   │       └── SeedCurriculumJEE.php
+│   ├── Exports/
+│   │   ├── InstituteOverviewExport.php
+│   │   ├── StudentReportExport.php
+│   │   └── BatchPerformanceExport.php
+│   ├── Helpers/
+│   │   └── InstituteHelper.php
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── Auth/
+│   │   │   ├── Admin/
+│   │   │   │   ├── DashboardController.php
+│   │   │   │   ├── CourseController.php
+│   │   │   │   ├── BatchController.php
+│   │   │   │   ├── StaffController.php
+│   │   │   │   ├── StudentController.php
+│   │   │   │   ├── SubjectController.php
+│   │   │   │   ├── CurriculumController.php
+│   │   │   │   ├── AssignmentController.php
+│   │   │   │   ├── SubAdminController.php
+│   │   │   │   └── SettingsController.php
+│   │   │   ├── AcademicHead/
+│   │   │   │   ├── DashboardController.php
+│   │   │   │   ├── StudentsController.php
+│   │   │   │   ├── BatchesController.php
+│   │   │   │   ├── TeachersController.php
+│   │   │   │   └── ReportsController.php
+│   │   │   ├── Owner/
+│   │   │   │   ├── DashboardController.php
+│   │   │   │   └── ReportsController.php
+│   │   │   ├── Teacher/
+│   │   │   │   ├── DashboardController.php
+│   │   │   │   ├── TestsController.php
+│   │   │   │   └── StudentsController.php
+│   │   │   ├── Typist/
+│   │   │   │   ├── DashboardController.php
+│   │   │   │   └── TestsController.php
+│   │   │   ├── SubAdmin/
+│   │   │   │   ├── DashboardController.php
+│   │   │   │   ├── ResponsesController.php
+│   │   │   │   └── StudentsController.php
+│   │   │   └── NotificationsController.php
+│   │   └── Middleware/
+│   │       ├── EnsureRole.php
+│   │       ├── ScopeToInstitute.php
+│   │       └── LogActivity.php
+│   ├── Imports/
+│   │   ├── StudentsImport.php
+│   │   ├── TestBlueprintImport.php
+│   │   └── OmrResponsesImport.php
+│   ├── Models/
+│   │   ├── Institute.php
+│   │   ├── User.php
+│   │   ├── Course.php
+│   │   ├── Batch.php
+│   │   ├── Student.php
+│   │   ├── Subject.php
+│   │   ├── CurriculumNode.php
+│   │   ├── Test.php
+│   │   ├── TestQuestion.php
+│   │   ├── TestTeacherAssignment.php
+│   │   ├── StudentResponse.php
+│   │   ├── StudentSubtopicMastery.php
+│   │   ├── UserBatchAssignment.php
+│   │   ├── UserSubjectAssignment.php
+│   │   ├── SubAdminPermission.php
+│   │   ├── InstituteSetting.php
+│   │   ├── Notification.php
+│   │   └── AuditLog.php
+│   ├── Services/
+│   │   ├── AiInsightService.php
+│   │   ├── MasteryCalculationService.php
+│   │   ├── OmrProcessingService.php
+│   │   ├── NotificationService.php
+│   │   ├── RankCalculationService.php
+│   │   └── TopicCodeValidator.php
+│   └── Providers/
+│       └── AppServiceProvider.php
+├── database/
+│   ├── migrations/     (25 migration files)
+│   └── seeders/
+│       ├── DatabaseSeeder.php
+│       ├── SubjectsSeeder.php
+│       ├── NeetCurriculumSeeder.php
+│       ├── JeeCurriculumSeeder.php
+│       └── SampleInstituteSeeder.php
+├── resources/
+│   ├── views/
+│   │   ├── layouts/
+│   │   │   ├── app.blade.php
+│   │   │   ├── admin.blade.php
+│   │   │   ├── academic-head.blade.php
+│   │   │   ├── owner.blade.php
+│   │   │   ├── teacher.blade.php
+│   │   │   ├── typist.blade.php
+│   │   │   └── sub-admin.blade.php
+│   │   ├── components/
+│   │   ├── auth/
+│   │   ├── admin/
+│   │   ├── academic-head/
+│   │   ├── owner/
+│   │   ├── teacher/
+│   │   ├── typist/
+│   │   └── sub-admin/
+│   └── css/
+│       └── app.css
+├── routes/
+│   └── web.php
+├── storage/
+│   └── app/
+│       ├── excel-templates/
+│       ├── uploads/
+│       └── exports/
+└── tests/
+```
+
+---
+
+## 2. DATABASE SCHEMA
+
+### 2.1 All 25 Tables
+
+**Foundation tables (multi-tenancy):**
+1. `institutes` - Tenant entity
+2. `users` - All 6 roles
+3. `institute_settings` - Tenant config
+
+**Academic structure:**
+4. `courses` - NEET, IIT-JEE
+5. `batches` - Morning A, Evening B, etc.
+6. `students` - Individual students
+7. `subjects` - Physics, Chemistry, etc.
+8. `curriculum_nodes` - Topic tree (Chapter→Topic→Subtopic)
+
+**Assignments:**
+9. `user_batch_assignments` - Teacher↔Batch
+10. `user_subject_assignments` - Teacher↔Subject
+11. `sub_admin_permissions` - Granular permissions
+
+**Testing:**
+12. `tests` - Test metadata
+13. `test_questions` - Question-level data (answer key + topic codes)
+14. `test_teacher_assignments` - Which teacher for which subject in test
+15. `student_responses` - Per-question responses
+16. `student_subtopic_mastery` - Computed mastery per subtopic (cumulative)
+17. `test_results_cache` - Pre-computed rankings
+
+**System:**
+18. `notifications` - In-app notifications
+19. `audit_logs` - All user actions
+20. `ai_insights_cache` - Gemini response cache
+21. `omr_upload_batches` - Upload history
+22. `omr_unmatched_rolls` - Manual mapping queue
+
+**Laravel defaults:**
+23. `sessions`
+24. `failed_jobs`
+25. `personal_access_tokens`
+
+### 2.2 Key Tables — Schema Details
+
+#### `institutes`
+
+```sql
+CREATE TABLE institutes (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(20) UNIQUE NOT NULL,
+    logo_path VARCHAR(500) NULL,
+    address TEXT NULL,
+    phone VARCHAR(20) NULL,
+    email VARCHAR(255) NULL,
+    website VARCHAR(255) NULL,
+    timezone VARCHAR(50) DEFAULT 'Asia/Kolkata',
+    is_active BOOLEAN DEFAULT TRUE,
+    subscription_tier VARCHAR(20) DEFAULT 'trial',
+    student_limit INT DEFAULT 500,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+);
+```
+
+#### `users`
+
+```sql
+CREATE TABLE users (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('owner','academic_head','admin','sub_admin','teacher','typist') NOT NULL,
+    phone VARCHAR(20) NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    email_verified_at TIMESTAMP NULL,
+    last_login_at TIMESTAMP NULL,
+    remember_token VARCHAR(100) NULL,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    INDEX idx_institute_role (institute_id, role),
+    INDEX idx_institute_active (institute_id, is_active)
+);
+```
+
+#### `courses`
+
+```sql
+CREATE TABLE courses (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(100) NOT NULL,  -- e.g., "NEET-2026"
+    code VARCHAR(20) NOT NULL,   -- e.g., "NEET"
+    exam_type ENUM('NEET','JEE_MAIN','JEE_ADVANCED','OTHER') NOT NULL,
+    target_year YEAR NOT NULL,
+    duration_months INT NOT NULL, -- 12, 24, etc.
+    total_questions INT NULL,     -- e.g., 180 for NEET
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    INDEX idx_institute (institute_id),
+    INDEX idx_exam_type (exam_type)
+);
+```
+
+#### `batches`
+
+```sql
+CREATE TABLE batches (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    course_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(100) NOT NULL,  -- "Morning Batch A"
+    code VARCHAR(20) NULL,        -- "NEET-M-A"
+    timing_label VARCHAR(50) NULL, -- "8AM-1PM"
+    capacity INT DEFAULT 50,
+    start_date DATE NULL,
+    end_date DATE NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    INDEX idx_institute_course (institute_id, course_id)
+);
+```
+
+#### `students`
+
+```sql
+CREATE TABLE students (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    batch_id BIGINT UNSIGNED NOT NULL,
+    
+    -- Identifiers
+    roll_number VARCHAR(30) NOT NULL,  -- For OMR matching
+    enrollment_number VARCHAR(30) NULL,
+    
+    -- Personal
+    name VARCHAR(255) NOT NULL,
+    father_name VARCHAR(255) NULL,
+    mother_name VARCHAR(255) NULL,
+    date_of_birth DATE NULL,
+    gender ENUM('M','F','O') NULL,
+    
+    -- Contact
+    phone VARCHAR(20) NULL,
+    parent_phone VARCHAR(20) NULL,
+    email VARCHAR(255) NULL,
+    address TEXT NULL,
+    
+    -- Academic
+    admission_date DATE NULL,
+    medium ENUM('english','hindi') DEFAULT 'english',
+    previous_score DECIMAL(5,2) NULL, -- From entrance test
+    
+    -- Status
+    is_active BOOLEAN DEFAULT TRUE,
+    
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    FOREIGN KEY (batch_id) REFERENCES batches(id) ON DELETE CASCADE,
+    UNIQUE KEY unq_roll_institute (institute_id, roll_number),
+    INDEX idx_batch (batch_id),
+    INDEX idx_institute_active (institute_id, is_active)
+);
+```
+
+#### `subjects`
+
+```sql
+CREATE TABLE subjects (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(100) NOT NULL,     -- "Physics"
+    code CHAR(1) NOT NULL,          -- "P"
+    exam_type ENUM('NEET','JEE','BOTH') DEFAULT 'BOTH',
+    display_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    UNIQUE KEY unq_code_institute (institute_id, code)
+);
+```
+
+#### `curriculum_nodes`
+
+```sql
+CREATE TABLE curriculum_nodes (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    subject_id BIGINT UNSIGNED NOT NULL,
+    parent_id BIGINT UNSIGNED NULL,  -- For tree structure
+    
+    -- Hierarchy
+    level ENUM('chapter','topic','subtopic') NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    code VARCHAR(20) NOT NULL,       -- "P-MEC-KIN-01"
+    full_code VARCHAR(30) NOT NULL,  -- Pre-computed full path
+    
+    -- Meta
+    display_order INT DEFAULT 0,
+    weightage DECIMAL(5,2) NULL,     -- % of exam (for NEET/JEE)
+    difficulty ENUM('easy','medium','hard') NULL,
+    
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES curriculum_nodes(id) ON DELETE CASCADE,
+    UNIQUE KEY unq_code_institute (institute_id, full_code),
+    INDEX idx_subject_level (subject_id, level),
+    INDEX idx_parent (parent_id)
+);
+```
+
+#### `tests`
+
+```sql
+CREATE TABLE tests (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    course_id BIGINT UNSIGNED NOT NULL,
+    
+    -- Identification
+    test_code VARCHAR(50) UNIQUE NOT NULL, -- "NEET-MOCK-2026-01"
+    name VARCHAR(255) NOT NULL,
+    
+    -- Metadata
+    test_type ENUM('dpt','weekly','mock','flt','chapter','revision') NOT NULL,
+    test_date DATE NOT NULL,
+    duration_minutes INT NOT NULL,
+    total_questions INT NOT NULL,
+    total_marks INT NOT NULL,
+    
+    -- Marking scheme
+    correct_marks DECIMAL(4,2) DEFAULT 4,
+    incorrect_marks DECIMAL(4,2) DEFAULT -1,
+    unattempted_marks DECIMAL(4,2) DEFAULT 0,
+    
+    -- Lifecycle
+    status ENUM('draft','blueprint_ready','conducted','responses_uploaded','analyzed','archived') DEFAULT 'draft',
+    created_by BIGINT UNSIGNED NOT NULL,  -- Typist user_id
+    
+    -- Timestamps
+    conducted_at TIMESTAMP NULL,
+    responses_uploaded_at TIMESTAMP NULL,
+    analyzed_at TIMESTAMP NULL,
+    
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id),
+    INDEX idx_institute_status (institute_id, status),
+    INDEX idx_test_date (test_date)
+);
+```
+
+#### `test_questions`
+
+```sql
+CREATE TABLE test_questions (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    test_id BIGINT UNSIGNED NOT NULL,
+    
+    -- Question metadata (no question TEXT stored)
+    question_number INT NOT NULL,  -- 1 to 180
+    subject_id BIGINT UNSIGNED NOT NULL,
+    curriculum_node_id BIGINT UNSIGNED NOT NULL,  -- Points to subtopic
+    topic_code VARCHAR(30) NOT NULL, -- Denormalized for speed
+    
+    -- Answer
+    correct_answer CHAR(1) NOT NULL, -- A/B/C/D or for integer: stored as string
+    answer_type ENUM('mcq','integer','numerical') DEFAULT 'mcq',
+    
+    -- Marking (can override test-level)
+    correct_marks DECIMAL(4,2) NULL,
+    incorrect_marks DECIMAL(4,2) NULL,
+    
+    -- Meta
+    difficulty ENUM('easy','medium','hard') NULL,
+    expected_time_seconds INT NULL,
+    
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (test_id) REFERENCES tests(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    FOREIGN KEY (curriculum_node_id) REFERENCES curriculum_nodes(id),
+    UNIQUE KEY unq_test_qnum (test_id, question_number),
+    INDEX idx_test_subject (test_id, subject_id),
+    INDEX idx_curriculum (curriculum_node_id)
+);
+```
+
+#### `test_teacher_assignments`
+
+```sql
+CREATE TABLE test_teacher_assignments (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    test_id BIGINT UNSIGNED NOT NULL,
+    teacher_id BIGINT UNSIGNED NOT NULL,
+    subject_id BIGINT UNSIGNED NOT NULL,
+    
+    -- Question range for this teacher
+    question_start INT NOT NULL,  -- e.g., 1
+    question_end INT NOT NULL,    -- e.g., 45
+    
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (test_id) REFERENCES tests(id) ON DELETE CASCADE,
+    FOREIGN KEY (teacher_id) REFERENCES users(id),
+    FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    UNIQUE KEY unq_test_subject (test_id, subject_id),
+    INDEX idx_teacher (teacher_id)
+);
+```
+
+#### `student_responses`
+
+```sql
+CREATE TABLE student_responses (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    test_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    test_question_id BIGINT UNSIGNED NOT NULL,
+    
+    -- Response
+    submitted_answer CHAR(1) NULL,  -- NULL = unattempted
+    is_correct BOOLEAN NULL,
+    marks_awarded DECIMAL(4,2) DEFAULT 0,
+    
+    -- For analysis
+    time_taken_seconds INT NULL,  -- If OMR captures timing
+    
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (test_id) REFERENCES tests(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (test_question_id) REFERENCES test_questions(id),
+    UNIQUE KEY unq_student_question (student_id, test_question_id),
+    INDEX idx_test_student (test_id, student_id)
+);
+```
+
+#### `student_subtopic_mastery`
+
+```sql
+CREATE TABLE student_subtopic_mastery (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    student_id BIGINT UNSIGNED NOT NULL,
+    curriculum_node_id BIGINT UNSIGNED NOT NULL, -- Subtopic
+    subject_id BIGINT UNSIGNED NOT NULL,
+    
+    -- Cumulative metrics
+    total_questions_attempted INT DEFAULT 0,
+    total_questions_correct INT DEFAULT 0,
+    total_marks_earned DECIMAL(8,2) DEFAULT 0,
+    total_marks_possible DECIMAL(8,2) DEFAULT 0,
+    
+    -- Computed
+    mastery_percentage DECIMAL(5,2) DEFAULT 0, -- (correct/attempted)*100
+    accuracy_percentage DECIMAL(5,2) DEFAULT 0, -- Same for coaching
+    
+    -- Trend
+    last_test_score DECIMAL(5,2) NULL,
+    last_updated_at TIMESTAMP NULL,
+    
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (curriculum_node_id) REFERENCES curriculum_nodes(id),
+    FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    UNIQUE KEY unq_student_subtopic (student_id, curriculum_node_id),
+    INDEX idx_student_subject (student_id, subject_id),
+    INDEX idx_mastery (mastery_percentage)
+);
+```
+
+#### `sub_admin_permissions`
+
+```sql
+CREATE TABLE sub_admin_permissions (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT UNSIGNED NOT NULL,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    
+    -- Permissions (boolean flags)
+    can_upload_omr BOOLEAN DEFAULT FALSE,
+    can_view_all_students BOOLEAN DEFAULT FALSE,
+    can_edit_students BOOLEAN DEFAULT FALSE,
+    can_create_students BOOLEAN DEFAULT FALSE,
+    can_view_all_batches BOOLEAN DEFAULT FALSE,
+    can_view_audit_logs BOOLEAN DEFAULT FALSE,
+    can_manage_notifications BOOLEAN DEFAULT FALSE,
+    
+    -- Scope restrictions (if applicable)
+    scoped_batch_ids JSON NULL, -- If can_view_all_batches is false
+    
+    -- Template used
+    template_used VARCHAR(50) NULL, -- 'response_manager', 'student_manager', 'custom'
+    
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    UNIQUE KEY unq_user (user_id)
+);
+```
+
+#### `omr_upload_batches`
+
+```sql
+CREATE TABLE omr_upload_batches (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    test_id BIGINT UNSIGNED NOT NULL,
+    uploaded_by BIGINT UNSIGNED NOT NULL, -- Sub-admin user_id
+    
+    -- Upload details
+    file_path VARCHAR(500) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_size INT NOT NULL,
+    
+    -- Processing
+    status ENUM('uploaded','validating','matching','completed','failed') DEFAULT 'uploaded',
+    total_rows INT NULL,
+    matched_rows INT NULL,
+    unmatched_rows INT NULL,
+    
+    -- Errors
+    error_log TEXT NULL,
+    validation_errors JSON NULL,
+    
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    completed_at TIMESTAMP NULL,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    FOREIGN KEY (test_id) REFERENCES tests(id),
+    FOREIGN KEY (uploaded_by) REFERENCES users(id)
+);
+```
+
+#### `audit_logs`
+
+```sql
+CREATE TABLE audit_logs (
+    id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+    institute_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NULL, -- NULL for system actions
+    
+    -- What happened
+    action VARCHAR(100) NOT NULL, -- 'test.created', 'student.updated', etc.
+    entity_type VARCHAR(50) NULL, -- 'Test', 'Student', etc.
+    entity_id BIGINT UNSIGNED NULL,
+    
+    -- Details
+    description TEXT NULL,
+    changes JSON NULL, -- Before/after for updates
+    metadata JSON NULL,
+    
+    -- Context
+    ip_address VARCHAR(45) NULL,
+    user_agent VARCHAR(500) NULL,
+    
+    created_at TIMESTAMP,
+    
+    FOREIGN KEY (institute_id) REFERENCES institutes(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_institute_created (institute_id, created_at),
+    INDEX idx_user (user_id),
+    INDEX idx_action (action)
+);
+```
+
+### 2.3 Relationships Diagram
+
+```
+institutes (1)
+├── users (N)                    [6 roles]
+├── courses (N)
+│   └── batches (N)
+│       └── students (N)
+│           ├── responses (N)
+│           └── subtopic_mastery (N)
+├── subjects (N)
+│   └── curriculum_nodes (N)     [tree structure]
+├── tests (N)
+│   ├── test_questions (N)
+│   ├── test_teacher_assignments (N)
+│   └── responses (N)
+├── notifications (N)
+├── audit_logs (N)
+└── institute_settings (1)
+```
+
+---
+
+## 3. AUTHENTICATION & AUTHORIZATION
+
+### 3.1 Login Flow
+
+```
+/login
+  ↓ (submit username + password)
+AuthController@login
+  ↓
+Validates credentials
+  ↓
+Checks is_active = true
+  ↓
+Loads user.institute_id into session
+  ↓
+Redirects based on role:
+  - owner → /owner/dashboard
+  - academic_head → /academic-head/dashboard
+  - admin → /admin/dashboard
+  - sub_admin → /sub-admin/dashboard
+  - teacher → /teacher/dashboard
+  - typist → /typist/dashboard
+```
+
+### 3.2 Middleware Stack
+
+```php
+// routes/web.php
+
+Route::middleware(['auth', 'scope.institute'])->group(function() {
+    
+    // Admin routes
+    Route::prefix('admin')
+        ->middleware('role:admin,owner')
+        ->group(function() { ... });
+    
+    // Academic Head routes
+    Route::prefix('academic-head')
+        ->middleware('role:academic_head,owner')
+        ->group(function() { ... });
+    
+    // Owner routes
+    Route::prefix('owner')
+        ->middleware('role:owner')
+        ->group(function() { ... });
+    
+    // Teacher routes
+    Route::prefix('teacher')
+        ->middleware('role:teacher')
+        ->group(function() { ... });
+    
+    // Typist routes
+    Route::prefix('typist')
+        ->middleware('role:typist')
+        ->group(function() { ... });
+    
+    // Sub-Admin routes
+    Route::prefix('sub-admin')
+        ->middleware('role:sub_admin,admin,owner')
+        ->group(function() { ... });
+});
+```
+
+### 3.3 Role Hierarchy
+
+```
+Owner (access to everything)
+  ├── Academic Head (full visibility)
+  ├── Admin (setup + user management)
+  │   └── Sub-Admin (custom permissions)
+  ├── Teacher (scoped to assignments)
+  └── Typist (test creation only)
+```
+
+---
+
+## 4. MULTI-TENANT PATTERN
+
+### 4.1 Strategy
+
+Every data query is scoped to `institute_id`. The `InstituteHelper` provides the current tenant context throughout the app.
+
+### 4.2 InstituteHelper
+
+```php
+// app/Helpers/InstituteHelper.php
+
+class InstituteHelper
+{
+    public static function current(): ?Institute
+    {
+        if (!auth()->check()) return null;
+        return auth()->user()->institute;
+    }
+    
+    public static function id(): ?int
+    {
+        return auth()->user()?->institute_id;
+    }
+    
+    public static function name(): string
+    {
+        return self::current()?->name ?? 'Vidya';
+    }
+    
+    public static function logo(): ?string
+    {
+        $logo = self::current()?->logo_path;
+        return $logo ? asset('storage/'.$logo).'?v='.time() : null;
+    }
+}
+```
+
+### 4.3 Global Scoping Middleware
+
+```php
+// app/Http/Middleware/ScopeToInstitute.php
+
+public function handle($request, Closure $next)
+{
+    if (auth()->check()) {
+        $instituteId = auth()->user()->institute_id;
+        
+        // Apply global scope via View::share
+        View::share('currentInstitute', InstituteHelper::current());
+        View::share('instituteName', InstituteHelper::name());
+        View::share('instituteLogo', InstituteHelper::logo());
+    }
+    
+    return $next($request);
+}
+```
+
+### 4.4 Query Pattern Example
+
+```php
+// ALWAYS scope queries to institute_id
+
+// ❌ WRONG (security risk):
+$students = Student::where('batch_id', $batchId)->get();
+
+// ✅ CORRECT:
+$students = Student::where('institute_id', InstituteHelper::id())
+    ->where('batch_id', $batchId)
+    ->get();
+
+// OR use Eloquent global scope (better):
+// In Student model:
+protected static function booted()
+{
+    static::addGlobalScope('institute', function ($query) {
+        if (auth()->check()) {
+            $query->where('institute_id', auth()->user()->institute_id);
+        }
+    });
+}
+```
+
+---
+
+# PART 2: PAGE INVENTORY
+
+## 5. PUBLIC PAGES (2 pages)
+
+### 5.1 Page 01: Login
+
+**Route:** `GET /login` → `POST /login`
+
+**Layout:** Minimal (no sidebar)
+
+**Features:**
+- Username + password fields
+- Remember me checkbox
+- Forgot password link
+- Institute logo + name (if subdomain-based)
+- Vidya branding (subtle)
+
+**After login redirects:**
+- Role-based routing to respective dashboards
+
+**Figma reference:** Similar to Arya login (reuse 80%)
+
+### 5.2 Page 02: Forgot Password
+
+**Route:** `GET /forgot-password`
+
+**Features:**
+- Email input
+- Send reset link
+- Back to login
+
+---
+
+## 6. ADMIN PAGES (14 pages)
+
+### 6.1 Page 03: Admin Dashboard
+
+**Route:** `GET /admin/dashboard`
+
+**Sections:**
+1. **Welcome card** (first-time setup wizard if data empty)
+2. **KPI cards** (4 cards):
+   - Total courses
+   - Total batches
+   - Total students
+   - Total staff
+3. **Quick actions** (4 buttons):
+   - Add Course
+   - Add Batch
+   - Import Students
+   - Create Staff
+4. **Recent activity** (5 latest audit log entries)
+5. **System health** (DB status, AI status, last backup)
+
+### 6.2 Page 04: Courses Management
+
+**Route:** `GET /admin/courses`
+
+**Features:**
+- List all courses (NEET, IIT-JEE, etc.)
+- Create new course (modal)
+- Edit course
+- Deactivate course
+- Pre-seeded templates (NEET-2026, NEET-2027, JEE-2026, JEE-2027)
+
+**Fields:**
+- Name (e.g., "NEET-2026")
+- Code (e.g., "NEET")
+- Exam Type (NEET/JEE_MAIN/JEE_ADVANCED)
+- Target Year
+- Duration (months)
+- Total Questions per FLT (e.g., 180)
+
+### 6.3 Page 05: Batches Management
+
+**Route:** `GET /admin/batches`
+
+**Features:**
+- List batches grouped by course
+- Create batch under selected course
+- Edit/deactivate batch
+- View students in batch
+- Assign class teacher (optional)
+
+**Fields:**
+- Course (dropdown)
+- Name (e.g., "Morning Batch A")
+- Code (auto-generated: NEET-M-A)
+- Timing label (e.g., "8 AM - 1 PM")
+- Capacity (default 50)
+- Start/End dates
+
+### 6.4 Page 06: Subjects Management
+
+**Route:** `GET /admin/subjects`
+
+**Features:**
+- List subjects (pre-seeded: Physics, Chemistry, Biology, Math)
+- Add custom subject
+- Edit subject
+- Toggle active status
+- Reorder display
+
+**Fields:**
+- Name
+- Code (1 letter: P, C, Z, B, M)
+- Exam Type (NEET/JEE/BOTH)
+- Display order
+
+### 6.5 Page 07: Curriculum Tree
+
+**Route:** `GET /admin/curriculum`
+
+**Features:**
+- Tree view of curriculum
+- Expand/collapse chapters → topics → subtopics
+- Search by code or name
+- Add/edit/delete nodes
+- Bulk import via Excel
+- Download reference sheet (PDF for teachers)
+
+**Actions:**
+- Click subject → see chapters
+- Click chapter → see topics
+- Click topic → see subtopics
+- Each node shows: code, name, weightage, difficulty
+
+### 6.6 Page 08: Staff Management
+
+**Route:** `GET /admin/staff`
+
+**Features:**
+- List all staff (6 roles)
+- Filter by role
+- Search by name/email
+- Create new staff
+- Edit staff (name, role, permissions)
+- Reset password
+- Deactivate
+
+**Create staff form:**
+- Name, email, username
+- Role dropdown (all 6 roles)
+- Initial password
+- Additional fields based on role:
+  - Teacher: Subject assignments, Batch assignments
+  - Sub-Admin: Permission template + custom flags
+  - Typist: No extra
+
+### 6.7 Page 09: Sub-Admin Creation (Special)
+
+**Route:** `GET /admin/sub-admin/create`
+
+**Features:**
+- Dedicated flow for creating sub-admins
+- Step 1: Basic info (name, email, username, password)
+- Step 2: Permission template selection:
+  - Response Manager (OMR upload + student view)
+  - Student Manager (student data + imports)
+  - Batch Coordinator (specific batches only)
+  - Custom (granular checkboxes)
+- Step 3: If scoped, select allowed batches
+- Step 4: Review and create
+
+### 6.8 Page 10: Students Management
+
+**Route:** `GET /admin/students`
+
+**Features:**
+- List all students across batches
+- Filter by batch, course, active status
+- Search by roll, name, phone
+- Bulk import (Excel/CSV template)
+- Add individual student
+- Edit student
+- Deactivate
+- Bulk actions (move batch, deactivate, export)
+
+**Import template fields:**
+- Roll number (required, unique per institute)
+- Enrollment number
+- Name (required)
+- Father name, mother name
+- DOB, gender
+- Phone, parent phone, email
+- Address
+- Admission date
+- Medium (english/hindi)
+
+### 6.9 Page 11: Teacher-Batch Assignments
+
+**Route:** `GET /admin/assignments`
+
+**Features:**
+- Matrix view: Teachers (rows) × Batches (columns)
+- Checkbox to assign/unassign
+- Per-teacher subject specification
+- Bulk assign (select teacher → check multiple batches)
+
+**Workflow:**
+1. Admin creates teachers
+2. Admin creates batches
+3. Admin visits this page
+4. For each teacher: pick subject + pick batches
+5. Save → assignments populated
+
+### 6.10 Page 12: Institute Settings
+
+**Route:** `GET /admin/settings`
+
+**Tabs (3):**
+
+**Tab 1: Institute Profile**
+- Name, logo upload
+- Address, phone, email, website
+- Academic year format
+- Timezone
+- Subscription info
+
+**Tab 2: Notifications**
+- Email SMTP config
+- Notification rules per role
+- At-risk student threshold (e.g., <40%)
+- Weekly digest settings
+
+**Tab 3: AI Settings**
+- Gemini API key (masked input)
+- AI mode (auto/gemini-only/template-only)
+- Circuit breaker threshold (default 5)
+- Cache TTL (default 3600s)
+- Usage stats (calls today, success rate)
+- "Reset circuit breaker" button
+- "Clear AI cache" button
+
+### 6.11 Page 13: Audit Log Viewer
+
+**Route:** `GET /admin/audit-log`
+
+**Features:**
+- Chronological list of all actions
+- Filter by: user, action type, date range, entity type
+- Search
+- Export to Excel
+- Details expansion (show before/after for updates)
+
+**Columns:**
+- Timestamp
+- User (name + role)
+- Action (e.g., "test.created")
+- Entity (e.g., "Test #42")
+- Details (expandable)
+- IP address
+
+### 6.12 Page 14: Notifications (Admin view)
+
+**Route:** `GET /admin/notifications`
+
+**Same as other roles but admin sees system notifications:**
+- Failed uploads
+- System errors
+- New user registrations (for approval if enabled)
+- Security alerts
+
+### 6.13 Page 15: Import Curriculum
+
+**Route:** `GET /admin/curriculum/import`
+
+**Features:**
+- Download Excel template
+- Upload filled Excel
+- Validate
+- Preview changes
+- Confirm import
+
+**Use case:** Institute wants to customize curriculum beyond seeded NEET/JEE
+
+### 6.14 Page 16: Reports Landing (Admin)
+
+**Route:** `GET /admin/reports`
+
+**Features:**
+- Grid of report cards
+- Each card: name + description + "Open" button
+- Shortcut to Academic Head reports (since admin can view)
+
+---
+
+## 7. ACADEMIC HEAD PAGES (9 pages)
+
+### 7.1 Page 17: Academic Head Dashboard
+
+**Route:** `GET /academic-head/dashboard`
+
+**Sections:**
+1. **Executive summary** (AI-generated paragraph)
+2. **KPI cards** (6 cards):
+   - Total students
+   - Active batches
+   - Tests this month
+   - Avg mastery %
+   - At-risk students count
+   - Top performers count
+3. **Charts** (4 charts):
+   - Batch performance comparison (bar)
+   - Monthly mastery trend (line)
+   - Subject-wise performance (donut)
+   - Student bands distribution (pie)
+4. **Recent activity feed** (compact, 5 items)
+
+### 7.2 Page 18: All Students (Academic Head)
+
+**Route:** `GET /academic-head/students`
+
+**Features:**
+- List all students across all batches
+- Filter by batch, course, performance band
+- Search
+- Click student → detailed view
+
+### 7.3 Page 19: Student Deep-Dive
+
+**Route:** `GET /academic-head/students/{id}`
+
+**Sections:**
+1. **Student info card** (name, roll, batch, photo)
+2. **KPI cards** (4):
+   - Overall mastery %
+   - Rank in batch
+   - Tests taken
+   - Strongest subject
+3. **Subject performance** (4 bars for NEET / 3 for JEE)
+4. **Subtopic mastery heatmap** (full grid)
+5. **Test history** (chronological with scores)
+6. **Trajectory chart** (line)
+7. **AI insight** (Gemini-generated)
+8. **Recommended actions** (3 cards)
+
+### 7.4 Page 20: All Batches
+
+**Route:** `GET /academic-head/batches`
+
+**Features:**
+- List batches
+- Filter by course
+- Each batch row shows: name, students, avg mastery, at-risk count
+- Click → batch detail page
+
+### 7.5 Page 21: Batch Detail
+
+**Route:** `GET /academic-head/batches/{id}`
+
+**Sections:**
+1. **Batch info** (name, course, students, teachers)
+2. **KPIs** (4 cards: avg, top, at-risk, tests taken)
+3. **Student list** (table with sort by performance)
+4. **Subject heatmap** (for this batch)
+5. **Teacher performance** (teachers assigned to this batch)
+
+### 7.6 Page 22: All Teachers
+
+**Route:** `GET /academic-head/teachers`
+
+**Features:**
+- List teachers
+- Each row: name, subject, batches assigned, avg student performance
+- Click → teacher detail
+
+### 7.7 Page 23: Teacher Detail (Growth Report)
+
+**Route:** `GET /academic-head/teachers/{id}`
+
+**Sections:**
+1. **Teacher info** (name, subject, experience, batches)
+2. **Signal band** (Healthy/Watch/Needs Support — from Arya's PR2)
+3. **KPIs**:
+   - Class avg vs institute avg
+   - Cadence compliance
+   - At-risk students in their classes
+4. **Subject performance across batches**
+5. **AI diagnostic** (supportive tone)
+6. **[Schedule 1:1 support meeting] button** (for "Needs Support" cases)
+
+### 7.8 Page 24: Reports Landing
+
+**Route:** `GET /academic-head/reports`
+
+**Grid of available reports:**
+- Batch Comparison (PR1-equivalent)
+- Teaching Health Diagnostic (PR2-equivalent)
+- Monthly Trends (PR3-equivalent)
+- Class Heatmap (TR1-equivalent)
+- At-Risk Students
+- Institute Overview
+
+### 7.9 Page 25: Institute Overview Report
+
+**Route:** `GET /academic-head/reports/overview`
+
+**Features (reuse Arya pattern):**
+- Header with institute name + logo
+- Executive summary (AI)
+- KPI grid
+- Subject performance
+- Batch comparison table
+- Top/bottom performers
+- At-risk list
+- [Download PDF] and [Download Excel] buttons
+
+---
+
+## 8. OWNER PAGES (6 pages)
+
+### 8.1 Page 26: Owner Dashboard
+
+**Route:** `GET /owner/dashboard`
+
+**Sections (strategic view):**
+1. **Executive summary** (AI-generated, business-focused)
+2. **Headline KPIs** (6 cards):
+   - Total students
+   - Total batches
+   - Revenue indicator (future)
+   - Retention rate (future)
+   - Overall mastery
+   - Growth vs last year
+3. **Charts** (4 charts):
+   - Course performance comparison (NEET vs JEE)
+   - Grade-tier distribution (pie)
+   - YoY performance (line)
+   - Enrollment trend (bar)
+4. **Strategic insights** (3 cards, AI-generated)
+
+### 8.2 Page 27: Course Performance
+
+**Route:** `GET /owner/courses`
+
+**Features:**
+- Compare NEET vs JEE performance
+- Batch-level breakdown
+- Subject-wise insights
+- Revenue projection (future)
+
+### 8.3 Page 28: Batch Performance
+
+**Route:** `GET /owner/batches`
+
+**Same as Academic Head but with business lens:**
+- Revenue per batch (future)
+- Capacity utilization
+- Retention rate (future)
+
+### 8.4 Page 29: Enrollment & Growth
+
+**Route:** `GET /owner/growth`
+
+**Features (Phase 2):**
+- Enrollment trends
+- Admission conversion
+- Retention analysis
+- Capacity planning
+
+### 8.5 Page 30: Strategic Reports
+
+**Route:** `GET /owner/reports`
+
+**Owner-specific reports:**
+- Monthly executive summary
+- Quarterly review
+- YoY comparison
+- Competitor benchmarking (manual input)
+
+### 8.6 Page 31: Owner Settings
+
+**Route:** `GET /owner/settings`
+
+**Owner-only configs:**
+- Institute ownership info
+- Subscription management
+- Admin user assignment
+- Emergency overrides
+
+---
+
+## 9. TEACHER PAGES (7 pages)
+
+### 9.1 Page 32: Teacher Dashboard
+
+**Route:** `GET /teacher/dashboard`
+
+**Sections:**
+1. **Welcome card** (name, assigned batches summary)
+2. **KPI cards** (4):
+   - My students count
+   - Tests this month
+   - Upcoming tests
+   - At-risk students in my classes
+3. **Upcoming tests** (list, with test date)
+4. **Recent test results** (list with avg scores)
+5. **At-risk students** (quick alert list, max 5)
+6. **Quick action:** View my students
+
+### 9.2 Page 33: My Tests
+
+**Route:** `GET /teacher/tests`
+
+**Sections:**
+1. **Tabs:**
+   - Upcoming (assigned, not conducted)
+   - Pending Results (conducted, awaiting upload)
+   - Completed (with results)
+2. **List of tests** with metadata
+3. **Click test → test result page**
+
+### 9.3 Page 34: Test Result View
+
+**Route:** `GET /teacher/tests/{id}`
+
+**Features (scoped to teacher's subject):**
+- Test info
+- Class average for this teacher's subject
+- Question-wise analysis (correct % per question)
+- Student list with their subject scores
+- Subtopic performance heatmap for this subject
+- Weak subtopics identified
+- AI insight
+
+### 9.4 Page 35: My Students
+
+**Route:** `GET /teacher/students`
+
+**3-level navigation (like Arya):**
+
+**Level 1: Batches**
+- List of assigned batches
+- Each batch shows student count + avg performance
+
+**Level 2: Students in Batch**
+- Click batch → list of students
+- Sort by performance
+- Filter at-risk, top performers
+
+**Level 3: Student Deep-Dive (already covered in Page 19 concept)**
+
+### 9.5 Page 36: Class Heatmap
+
+**Route:** `GET /teacher/heatmap`
+
+**Features (Arya TR1-equivalent):**
+- Matrix: Students (rows) × Subtopics (columns)
+- Cells colored by mastery %
+- Filter by batch
+- Only shows teacher's subject
+- Identify weak subtopics (red columns)
+- Identify struggling students (red rows)
+
+### 9.6 Page 37: Teacher Notifications
+
+**Route:** `GET /teacher/notifications`
+
+**Role-specific alerts:**
+- New test assigned
+- Test results ready
+- At-risk student alert
+- System updates
+
+### 9.7 Page 38: Teacher Profile
+
+**Route:** `GET /teacher/profile`
+
+- Personal info
+- Password change
+- Assigned batches (read-only)
+- Assigned subjects (read-only)
+
+---
+
+## 10. TYPIST PAGES (5 pages)
+
+### 10.1 Page 39: Typist Dashboard
+
+**Route:** `GET /typist/dashboard`
+
+**Sections:**
+1. **KPI cards** (3):
+   - Tests created this month
+   - Drafts pending
+   - Tests ready for conduct
+2. **Quick action: Create new test** (prominent button)
+3. **Recent tests** (last 5 created)
+
+### 10.2 Page 40: Create Test — Step 1 (Metadata)
+
+**Route:** `GET /typist/tests/create`
+
+**Form fields:**
+- Test Code (auto-generated OR manual)
+- Test Name
+- Course (dropdown)
+- Batches (multi-select checkbox)
+- Test Date (date picker)
+- Test Type (DPT/Weekly/Mock/FLT)
+- Duration minutes
+- Total Questions
+- Marking Scheme:
+  - Correct marks (default +4)
+  - Incorrect marks (default -1)
+  - Unattempted marks (default 0)
+
+**Action:** Save as draft → proceed to Step 2
+
+### 10.3 Page 41: Create Test — Step 2 (Upload Answer Key)
+
+**Route:** `GET /typist/tests/{id}/answer-key`
+
+**Features:**
+- Download Excel template (pre-filled with question numbers)
+- Template columns:
+  ```
+  Q# | Answer | Topic Code | Marks Override (optional)
+  ```
+- Upload filled Excel
+- Validation results:
+  - ✅ All topic codes exist
+  - ✅ Question count matches
+  - ⚠️ Warnings (if any)
+- Preview table
+
+### 10.4 Page 42: Create Test — Step 3 (Assign Teachers)
+
+**Route:** `GET /typist/tests/{id}/assign`
+
+**Features:**
+- System auto-detects subject distribution:
+  - Physics: Q1-45 (45 questions)
+  - Chemistry: Q46-90 (45 questions)
+  - Zoology: Q91-135 (45 questions)
+  - Botany: Q136-180 (45 questions)
+- For each subject block:
+  - Dropdown of teachers (filtered by subject + batch)
+  - Select teacher
+- Review and submit
+- Test status changes to "Blueprint Ready"
+
+### 10.5 Page 43: My Tests Created
+
+**Route:** `GET /typist/tests`
+
+**Tabs:**
+- Draft (not submitted)
+- Ready (blueprint submitted)
+- Analyzed (responses uploaded)
+
+**Columns:**
+- Test code, name, date, type, batches, teachers count, status
+- Actions: Edit (if draft), View, Delete (if draft)
+
+---
+
+## 11. SUB-ADMIN PAGES (5 pages)
+
+### 11.1 Page 44: Sub-Admin Dashboard
+
+**Route:** `GET /sub-admin/dashboard`
+
+**Sections:**
+1. **KPI cards**:
+   - Tests awaiting response upload
+   - Responses uploaded this month
+   - Unmatched rolls (pending manual action)
+2. **Quick action: Upload Responses**
+3. **Recent uploads** (last 5)
+4. **Tests needing attention** (list)
+
+### 11.2 Page 45: Upload Responses
+
+**Route:** `GET /sub-admin/responses/upload`
+
+**Step-by-step flow:**
+
+**Step 1: Select Test**
+- List of tests with status = "Blueprint Ready" or "Conducted"
+- Filter by date, course, batch
+- Click test → proceed
+
+**Step 2: Upload Excel**
+- Drag-drop or browse
+- Expected format validation
+- File upload progress
+
+**Step 3: Validation**
+- Match roll numbers with database
+- Show validation summary:
+  - ✅ 245 matched
+  - ⚠️ 3 unmatched (show list)
+  - ❌ 2 duplicates (show list)
+- Handle unmatched:
+  - Suggest fuzzy match
+  - [Match] [Skip] [Add as new student]
+- Resolve duplicates
+
+**Step 4: Process**
+- Confirm dialog
+- Background job starts
+- Progress indicator
+- Completion → success message
+
+**Step 5: Results preview**
+- Summary of students processed
+- Top performers
+- Link to reports
+
+### 11.3 Page 46: Upload History
+
+**Route:** `GET /sub-admin/responses/history`
+
+**Features:**
+- List of all past uploads
+- Filter by test, date, status
+- Click → details (what was uploaded, errors, etc.)
+
+### 11.4 Page 47: All Students (Sub-Admin view)
+
+**Route:** `GET /sub-admin/students`
+
+**Features (based on permissions):**
+- If can_view_all_students = true: show all
+- If scoped to batches: show only those batches
+- Search, filter
+- Edit student (if can_edit_students = true)
+- Add student (if can_create_students = true)
+
+### 11.5 Page 48: Sub-Admin Profile
+
+**Route:** `GET /sub-admin/profile`
+
+- Personal info
+- Assigned permissions (read-only, set by admin)
+- Password change
+
+---
+
+# PART 3: CORE SYSTEMS
+
+## 12. TEST WORKFLOW SYSTEM
+
+### 12.1 Complete Workflow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 1: Teacher designs paper (OFFLINE)                       │
+│  - Writes questions on Word/PDF                                │
+│  - Assigns topic code to each question                         │
+│  - Creates answer key                                          │
+│  - Submits to Typist                                           │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 2: Typist creates test in Vidya (Pages 40-42)            │
+│  Step A: Fill metadata (test code, date, type, marking)       │
+│  Step B: Download Excel template                               │
+│  Step C: Fill Q#, Answer, Topic Code per question             │
+│  Step D: Upload Excel                                          │
+│  Step E: System validates                                      │
+│  Step F: Typist assigns teachers by subject                    │
+│  Step G: Submit → Status: "Blueprint Ready"                    │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 3: OMR Sheets printed + distributed (OFFLINE)            │
+│  - Institute's standard process                                │
+│  - Not handled by Vidya                                        │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 4: Test conducted (OFFLINE)                              │
+│  - Students fill OMR sheets                                    │
+│  - Submit to invigilator                                       │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 5: OMR Scanning (EXTERNAL SOFTWARE)                      │
+│  - Institute uses their OMR scanner                            │
+│  - Generates Excel file (Roll, Q1, Q2, ...)                    │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 6: Sub-Admin uploads in Vidya (Page 45)                 │
+│  Step A: Select test from "Ready" list                         │
+│  Step B: Upload OMR Excel                                      │
+│  Step C: System validates roll numbers                         │
+│  Step D: Handle unmatched (manual mapping)                     │
+│  Step E: Process → Background job                              │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 7: Automated Analysis (Vidya backend)                    │
+│  ┌─ OmrProcessingService.php ───────────────┐                  │
+│  │ 1. Parse Excel rows                      │                  │
+│  │ 2. For each student:                     │                  │
+│  │    - Match roll to student_id            │                  │
+│  │    - Create student_responses rows       │                  │
+│  │    - Compare with answer key             │                  │
+│  │    - Calculate marks (with negative)     │                  │
+│  │ 3. Trigger MasteryCalculationService     │                  │
+│  │ 4. Update student_subtopic_mastery       │                  │
+│  │ 5. Calculate ranks (RankCalculation...)  │                  │
+│  │ 6. Cache results                         │                  │
+│  │ 7. Send notifications                    │                  │
+│  │ 8. Mark test status = "analyzed"         │                  │
+│  └──────────────────────────────────────────┘                  │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 8: Reports Available (All roles)                         │
+│  - Teacher: Class heatmap + student cards                      │
+│  - Academic Head: Full visibility                              │
+│  - Owner: Strategic view                                        │
+│  - Sub-Admin: Student-level (per permissions)                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 12.2 Test Status Lifecycle
+
+```
+draft
+  ↓ (typist saves metadata)
+blueprint_ready
+  ↓ (OMR conducted offline — manual status update by sub-admin OR auto via date trigger)
+conducted
+  ↓ (sub-admin uploads OMR Excel)
+responses_uploaded
+  ↓ (background job completes)
+analyzed
+  ↓ (after 6 months OR manual)
+archived
+```
+
+---
+
+## 13. OMR RESPONSE PROCESSING
+
+### 13.1 OmrProcessingService
+
+**Location:** `app/Services/OmrProcessingService.php`
+
+**Key methods:**
+
+```php
+class OmrProcessingService
+{
+    public function processUpload(int $testId, string $excelPath): array
+    {
+        // Step 1: Parse Excel
+        $rows = $this->parseExcel($excelPath);
+        
+        // Step 2: Validate structure
+        $validation = $this->validate($testId, $rows);
+        if (!$validation['valid']) {
+            return ['status' => 'validation_failed', 'errors' => $validation['errors']];
+        }
+        
+        // Step 3: Match roll numbers
+        $matchResults = $this->matchRollNumbers($rows);
+        if ($matchResults['unmatched_count'] > 0) {
+            return [
+                'status' => 'pending_manual_match',
+                'unmatched' => $matchResults['unmatched']
+            ];
+        }
+        
+        // Step 4: Create responses
+        $this->createResponses($testId, $matchResults['matched']);
+        
+        // Step 5: Calculate scores
+        $this->calculateScores($testId);
+        
+        // Step 6: Trigger mastery update
+        app(MasteryCalculationService::class)->updateForTest($testId);
+        
+        // Step 7: Calculate ranks
+        app(RankCalculationService::class)->calculateRanks($testId);
+        
+        // Step 8: Send notifications
+        app(NotificationService::class)->notifyTestAnalyzed($testId);
+        
+        // Step 9: Update test status
+        Test::find($testId)->update([
+            'status' => 'analyzed',
+            'analyzed_at' => now()
+        ]);
+        
+        return ['status' => 'success'];
+    }
+    
+    private function matchRollNumbers(array $rows): array { ... }
+    private function createResponses(int $testId, array $matched): void { ... }
+    private function calculateScores(int $testId): void { ... }
+}
+```
+
+### 13.2 Fuzzy Roll Number Matching
+
+```php
+// For unmatched rolls, suggest closest match
+// Uses Levenshtein distance
+
+private function suggestMatch(string $rollInExcel, Collection $students)
+{
+    $suggestions = $students
+        ->map(fn($s) => [
+            'id' => $s->id,
+            'roll' => $s->roll_number,
+            'name' => $s->name,
+            'distance' => levenshtein($rollInExcel, $s->roll_number)
+        ])
+        ->filter(fn($s) => $s['distance'] <= 2) // Max 2 character difference
+        ->sortBy('distance')
+        ->take(3)
+        ->values();
+    
+    return $suggestions;
+}
+```
+
+### 13.3 Excel Format Specifications
+
+**OMR Upload Excel format:**
+
+```
+| Roll No | Q1 | Q2 | Q3 | ... | Q180 |
+|---------|-----|-----|-----|-----|------|
+| 2401    | B   | A   | C   | ... | D    |
+| 2402    | A   | A   | B   | ... | C    |
+| 2403    | C   | B   |     | ... | D    |  (blank = unattempted)
+```
+
+**Accepted values:**
+- A, B, C, D (MCQ answers)
+- Empty / blank (unattempted)
+- Numeric values (for integer-type questions)
+
+---
+
+## 14. MASTERY CALCULATION ENGINE
+
+### 14.1 MasteryCalculationService
+
+```php
+class MasteryCalculationService
+{
+    public function updateForTest(int $testId): void
+    {
+        $test = Test::find($testId);
+        $studentIds = StudentResponse::where('test_id', $testId)
+            ->distinct('student_id')
+            ->pluck('student_id');
+        
+        foreach ($studentIds as $studentId) {
+            $this->updateStudentMastery($studentId, $testId);
+        }
+    }
+    
+    private function updateStudentMastery(int $studentId, int $testId): void
+    {
+        // Get all responses for this student in this test
+        // Group by curriculum_node_id (subtopic)
+        $responsesBySubtopic = StudentResponse::with('testQuestion')
+            ->where('student_id', $studentId)
+            ->where('test_id', $testId)
+            ->get()
+            ->groupBy('testQuestion.curriculum_node_id');
+        
+        foreach ($responsesBySubtopic as $subtopicId => $responses) {
+            // Calculate cumulative mastery
+            $existing = StudentSubtopicMastery::firstOrNew([
+                'student_id' => $studentId,
+                'curriculum_node_id' => $subtopicId,
+            ]);
+            
+            $newAttempted = $responses->count();
+            $newCorrect = $responses->where('is_correct', true)->count();
+            $newMarksEarned = $responses->sum('marks_awarded');
+            $newMarksPossible = $responses->sum(function($r) {
+                return $r->testQuestion->correct_marks ?? 4;
+            });
+            
+            // Update cumulative
+            $existing->total_questions_attempted += $newAttempted;
+            $existing->total_questions_correct += $newCorrect;
+            $existing->total_marks_earned += $newMarksEarned;
+            $existing->total_marks_possible += $newMarksPossible;
+            
+            // Recalculate percentages
+            if ($existing->total_questions_attempted > 0) {
+                $existing->mastery_percentage = 
+                    ($existing->total_questions_correct / $existing->total_questions_attempted) * 100;
+            }
+            if ($existing->total_marks_possible > 0) {
+                $existing->accuracy_percentage = 
+                    ($existing->total_marks_earned / $existing->total_marks_possible) * 100;
+            }
+            
+            // Track last test
+            $existing->last_test_score = $newMarksEarned;
+            $existing->last_updated_at = now();
+            
+            $existing->save();
+        }
+    }
+}
+```
+
+### 14.2 Mastery Formula
+
+```
+Subtopic Mastery % = (Total Correct ÷ Total Attempted) × 100
+
+Accuracy % = (Total Marks Earned ÷ Total Marks Possible) × 100
+  (differs from mastery when negative marking applies)
+
+Example:
+  Student attempted 10 questions of "Kinematics" across 5 tests
+  Got 7 correct, 2 wrong, 1 skipped
+  
+  Mastery: 7/10 × 100 = 70%
+  Marks: +4×7 + (-1×2) + 0×1 = 28 - 2 = 26
+  Possible: 4×10 = 40
+  Accuracy: 26/40 × 100 = 65%
+  
+  Both tracked — mastery for conceptual clarity, accuracy for exam performance.
+```
+
+---
+
+## 15. REPORTS ENGINE
+
+### 15.1 Report Types Overview
+
+| Report | For Role | Similar to Arya |
+|--------|----------|-----------------|
+| **Batch Comparison** | Academic Head | PR1 Section Comparison |
+| **Teaching Health** | Academic Head | PR2 Teaching Health |
+| **Monthly Trends** | Academic Head | PR3 Monthly Trends |
+| **Class Heatmap** | Teacher + AH | TR1 Class Heatmap |
+| **Student Deep-Dive** | Teacher + AH | Student Detail Page |
+| **Institute Overview** | AH + Owner | School Overview |
+| **At-Risk Students** | AH + Teacher | At-Risk Report |
+
+### 15.2 Reports Reuse Arya Patterns
+
+All 7 reports reuse Arya's structure:
+- Header with institute branding
+- AI-generated diagnosis/summary at top
+- KPI cards
+- Charts (Chart.js)
+- Detailed tables
+- PDF + Excel export
+
+---
+
+## 16. AI INTEGRATION (GEMINI)
+
+### 16.1 AiInsightService (copy from Arya)
+
+**100% reuse from Arya** with these context methods renamed:
+
+```
+Arya method → Vidya method
+─────────────────────────
+sectionComparison() → batchComparison()
+teachingHealth() → teachingHealth() (same)
+classHeatmap() → classHeatmap() (same)
+monthlyTrends() → monthlyTrends() (same)
+schoolOverview() → instituteOverview()
+```
+
+### 16.2 AI Integration Points
+
+**Reports that use AI:**
+- ✅ Academic Head dashboard (executive summary)
+- ✅ Owner dashboard (strategic summary)
+- ✅ Batch Comparison report (AI diagnosis)
+- ✅ Teaching Health report (supportive insights)
+- ✅ Monthly Trends report (trajectory narrative)
+- ✅ Class Heatmap (teacher-facing insights)
+- ✅ Student Deep-Dive (individual AI narrative)
+- ✅ Institute Overview (executive summary)
+
+### 16.3 Fallback Behavior
+
+**Same 3-mode system as Arya:**
+- Auto (default): Gemini with template fallback
+- Gemini-only (strict)
+- Template-only (disabled AI)
+
+**Circuit breaker:** 5 failures in 5 minutes → auto-disable
+
+**Cache TTL:** 1 hour (configurable via admin)
+
+---
+
+## 17. NOTIFICATIONS SYSTEM
+
+### 17.1 Notification Types
+
+```
+Academic notifications:
+  - at_risk_alert (student fell below threshold)
+  - new_test_assigned (teacher)
+  - test_results_ready (teacher, sub-admin)
+  - weekly_performance_digest (academic_head, owner)
+  - batch_performance_alert (academic_head)
+
+Operational notifications:
+  - test_conducted_no_response (sub-admin reminder)
+  - response_upload_complete (sub-admin)
+  - response_processing_failed (sub-admin, admin)
+  - manual_match_required (sub-admin)
+
+System notifications:
+  - new_user_created (admin, owner)
+  - password_reset (user)
+  - ai_service_degraded (admin)
+  - backup_completed (admin)
+```
+
+### 17.2 Notification Delivery
+
+- **In-app** (primary) — bell icon with badge
+- **Email** (optional, configured per user)
+- **SMS** (Phase 2)
+
+---
+
+## 18. ACTIVITY LOG SYSTEM
+
+### 18.1 What Gets Logged
+
+**Authentication:**
+- login_success
+- login_failed
+- logout
+- password_changed
+- password_reset_requested
+
+**Admin actions:**
+- institute.updated
+- course.created, updated, deleted
+- batch.created, updated, deleted
+- user.created, updated, deactivated
+- student.created, updated, deleted
+- subject.created, updated, deleted
+- curriculum.created, updated, deleted
+
+**Test workflow:**
+- test.created (by typist)
+- test.blueprint_uploaded
+- test.teachers_assigned
+- test.responses_uploaded
+- test.analyzed
+- test.archived
+
+**Sub-admin:**
+- sub_admin.permission_updated
+- sub_admin.batch_scoped
+
+**System:**
+- backup.completed
+- backup.failed
+- ai_service.disabled
+- ai_service.enabled
+
+### 18.2 Log Retention
+
+- Active logs: 2 years (online)
+- Archive: 5 years (for compliance)
+- DPDP Act 2023 compliant
+
+---
+
+# PART 4: TECHNICAL DETAILS
+
+## 19. API ENDPOINTS (Routes Summary)
+
+### 19.1 Public Routes
+
+```php
+Route::get('/', [LandingController::class, 'index']);
+Route::get('/login', [AuthController::class, 'showLogin']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::get('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/forgot-password', [AuthController::class, 'sendResetLink']);
+Route::post('/logout', [AuthController::class, 'logout']);
+```
+
+### 19.2 Admin Routes (~25 routes)
+
+```php
+Route::prefix('admin')->middleware('role:admin,owner')->group(function() {
+    Route::get('/dashboard', [Admin\DashboardController::class, 'index']);
+    
+    // Courses
+    Route::resource('/courses', Admin\CourseController::class);
+    
+    // Batches
+    Route::resource('/batches', Admin\BatchController::class);
+    
+    // Subjects
+    Route::resource('/subjects', Admin\SubjectController::class);
+    
+    // Curriculum
+    Route::get('/curriculum', [Admin\CurriculumController::class, 'index']);
+    Route::post('/curriculum/node', [Admin\CurriculumController::class, 'store']);
+    Route::put('/curriculum/node/{id}', [Admin\CurriculumController::class, 'update']);
+    Route::delete('/curriculum/node/{id}', [Admin\CurriculumController::class, 'destroy']);
+    Route::get('/curriculum/import', [Admin\CurriculumController::class, 'importForm']);
+    Route::post('/curriculum/import', [Admin\CurriculumController::class, 'import']);
+    
+    // Staff
+    Route::resource('/staff', Admin\StaffController::class);
+    
+    // Sub-admin (special)
+    Route::get('/sub-admin/create', [Admin\SubAdminController::class, 'create']);
+    Route::post('/sub-admin', [Admin\SubAdminController::class, 'store']);
+    
+    // Students
+    Route::resource('/students', Admin\StudentController::class);
+    Route::get('/students/import', [Admin\StudentController::class, 'importForm']);
+    Route::post('/students/import', [Admin\StudentController::class, 'import']);
+    
+    // Assignments
+    Route::get('/assignments', [Admin\AssignmentController::class, 'index']);
+    Route::post('/assignments', [Admin\AssignmentController::class, 'update']);
+    
+    // Settings
+    Route::get('/settings', [Admin\SettingsController::class, 'index']);
+    Route::put('/settings/profile', [Admin\SettingsController::class, 'updateProfile']);
+    Route::put('/settings/notifications', [Admin\SettingsController::class, 'updateNotifications']);
+    Route::put('/settings/ai', [Admin\SettingsController::class, 'updateAI']);
+    
+    // Audit Log
+    Route::get('/audit-log', [Admin\AuditLogController::class, 'index']);
+    
+    // Reports (shortcut)
+    Route::get('/reports', [Admin\ReportsController::class, 'index']);
+});
+```
+
+### 19.3 Similar for other roles
+
+Total routes: ~110 (estimated, similar to Arya)
+
+---
+
+## 20. EXCEL TEMPLATES
+
+### 20.1 Student Import Template
+
+**File:** `storage/app/excel-templates/students-import.xlsx`
+
+**Columns:**
+```
+Roll No* | Enrollment No | Name* | Father Name | Mother Name | 
+DOB | Gender | Phone | Parent Phone | Email | Address | 
+Admission Date | Medium
+```
+
+### 20.2 Test Blueprint Template
+
+**File:** `storage/app/excel-templates/test-blueprint.xlsx`
+
+**Columns:**
+```
+Q#* | Answer* | Topic Code* | Correct Marks | Incorrect Marks | Notes
+```
+
+### 20.3 OMR Response Template
+
+**File:** `storage/app/excel-templates/omr-response.xlsx`
+
+**Format (user's OMR scanner outputs this):**
+```
+Roll No | Q1 | Q2 | Q3 | ... | Q180
+```
+
+### 20.4 Curriculum Import Template
+
+**File:** `storage/app/excel-templates/curriculum-import.xlsx`
+
+**Columns:**
+```
+Subject Code | Chapter Code | Chapter Name | Topic Code | Topic Name | 
+Subtopic Code | Subtopic Name | Weightage % | Difficulty
+```
+
+---
+
+## 21. SEEDERS
+
+### 21.1 DatabaseSeeder
+
+```php
+public function run(): void
+{
+    $this->call([
+        // Essential seeders (always run)
+        SubjectsSeeder::class,
+        NeetCurriculumSeeder::class,
+        JeeCurriculumSeeder::class,
+        
+        // Sample data seeders (optional, for dev/demo)
+        // SampleInstituteSeeder::class,
+        // SampleStaffSeeder::class,
+        // SampleStudentsSeeder::class,
+    ]);
+}
+```
+
+### 21.2 Pre-Loaded Curriculum
+
+**Seeded from authoritative NEET/JEE sources:**
+- Physics (NEET + JEE overlap)
+- Chemistry (same)
+- Biology (NEET only)
+  - Zoology
+  - Botany
+- Mathematics (JEE only)
+
+---
+
+## 22. PRE-LOADED DATA
+
+### 22.1 NEET Syllabus (~500 subtopics)
+
+**Physics (~150 subtopics):**
+- Mechanics: Kinematics, Laws of Motion, Work Energy Power, Rotational Motion, Gravitation
+- Thermal Physics: Thermometry, Calorimetry, Thermodynamics, Kinetic Theory
+- Oscillations & Waves: SHM, Waves, Sound
+- Electrostatics & Magnetism: Coulomb's Law, Electric Field, Capacitance, Magnetic Effects
+- Current Electricity: Ohm's Law, Circuits, Heating
+- Optics: Ray Optics, Wave Optics
+- Modern Physics: Photoelectric, Atoms, Nuclei, Semiconductors
+
+**Chemistry (~130 subtopics):**
+- Physical Chemistry: Atomic Structure, Chemical Bonding, States of Matter, Thermodynamics, Equilibrium, Redox
+- Inorganic Chemistry: Periodic Table, Hydrogen, s-Block, p-Block, d-Block, Coordination
+- Organic Chemistry: Basics, Hydrocarbons, Alcohols, Aldehydes, Amines, Biomolecules
+
+**Zoology (~110 subtopics):**
+- Cell Biology, Genetics, Evolution, Human Physiology, Reproduction, Animal Kingdom
+
+**Botany (~110 subtopics):**
+- Plant Physiology, Photosynthesis, Ecology, Plant Kingdom, Morphology, Cell Biology
+
+### 22.2 JEE Syllabus (~400 subtopics)
+
+**Physics (~140 subtopics) - overlaps with NEET + additional:**
+- All NEET topics + Wave Optics (deeper), Modern Physics (deeper), Electronics
+
+**Chemistry (~130 subtopics) - similar to NEET**
+
+**Mathematics (~130 subtopics):**
+- Algebra: Quadratic, Sequences, Complex Numbers, Binomial
+- Trigonometry: Ratios, Equations, Inverse Trig
+- Coordinate Geometry: Straight Line, Circle, Parabola, Ellipse, Hyperbola
+- Calculus: Functions, Limits, Continuity, Differentiation, Integration, Differential Equations
+- Vector & 3D: Vectors, 3D Geometry
+- Statistics & Probability: Probability, Statistics
+
+---
+
+# PART 5: BUILD PLAN
+
+## 23. WEEK-BY-WEEK BUILD SCHEDULE
+
+### Week 1: Foundation
+
+**Day 1:**
+- ✅ VIDYA_CONTEXT.md locked (DONE)
+- ✅ VIDYA_BLUEPRINT.md (this doc)
+- Create vidya-design-tokens.md
+- Start Figma file
+
+**Day 2:**
+- Figma: Login + 6 role dashboards designs
+- Key screens: Test creation, OMR upload
+
+**Day 3:**
+- Dev environment setup
+- `composer create-project laravel/laravel vidya`
+- Git + GitHub repo
+- Initial commit
+
+**Day 4-5:**
+- All 25 migrations created
+- Database schema finalized
+- `php artisan migrate` runs clean
+- Seeders for subjects + curriculum
+- NEET + JEE curriculum seeded
+
+**Day 6-7:**
+- All 6 role authentication
+- Login page working
+- Role-based middleware
+- Layouts for 6 roles
+- First working login
+- Tag: v0.1-auth-working
+
+### Week 2: Admin Panel
+
+**Day 8-9:**
+- Admin dashboard
+- Courses management
+- Batches management
+- Subjects management
+
+**Day 10-11:**
+- Curriculum tree UI
+- Staff management
+- Sub-admin creation flow
+
+**Day 12-13:**
+- Students management + bulk import
+- Teacher-Batch assignments
+
+**Day 14:**
+- Settings (3 tabs)
+- Audit log viewer
+- Tag: v0.2-admin-complete
+
+### Week 3: Test Workflow
+
+**Day 15-16:**
+- Typist dashboard + test creation Step 1 (metadata)
+- Excel template generation
+- Test creation Step 2 (answer key upload)
+
+**Day 17-18:**
+- Test creation Step 3 (teacher assignment)
+- Typist "My Tests Created" page
+- Validation engine (topic codes, question count)
+
+**Day 19-20:**
+- Sub-Admin dashboard
+- Upload Responses flow (Steps 1-5)
+- OmrProcessingService
+- Fuzzy matching for unmatched rolls
+
+**Day 21:**
+- Mastery calculation service
+- Background job processing
+- Tag: v0.3-tests-working
+
+### Week 4: Dashboards & Reports
+
+**Day 22-23:**
+- Teacher dashboard
+- My Tests + Test Result view
+- My Students (3-level navigation)
+- Class Heatmap
+
+**Day 24-25:**
+- Academic Head dashboard
+- All Students + Deep-Dive
+- All Batches + Batch Detail
+
+**Day 26-27:**
+- All Teachers + Teacher Growth Report
+- Academic Head reports (Batch Comparison, Teaching Health, Monthly Trends)
+- Institute Overview report + PDF/Excel export
+
+**Day 28:**
+- Owner dashboard (strategic view)
+- Owner reports
+- Tag: v0.4-reports-complete
+
+### Week 5: AI + Polish + Deploy
+
+**Day 29-30:**
+- Gemini AI integration
+- All AI insight methods
+- Template fallback
+- Admin AI Settings page
+
+**Day 31-32:**
+- Notifications system
+- In-app notification UI
+- Role-specific notification rules
+- Activity log completeness check
+
+**Day 33:**
+- Bug fixes
+- Performance optimization
+- Chart rendering fixes
+- Responsive design tweaks
+
+**Day 34-35:**
+- Production deployment to Hostinger
+- SSL setup
+- First pilot institute onboarding
+- Tag: v1.0-release
+
+### Week 6 (if needed): Buffer
+
+- Pilot feedback iterations
+- Final polish
+- Documentation
+- Training materials
+
+---
+
+## 24. TESTING STRATEGY
+
+### 24.1 Manual Testing Checklist
+
+**Per role:**
+- [ ] Login/logout works
+- [ ] Dashboard loads without errors
+- [ ] All menu items accessible
+- [ ] Forms submit correctly
+- [ ] Data displays accurately
+
+**Test workflow end-to-end:**
+- [ ] Typist creates test (Steps 1-3)
+- [ ] Excel validation catches errors
+- [ ] Teacher assignment works
+- [ ] Sub-Admin uploads responses
+- [ ] Validation catches unmatched rolls
+- [ ] Manual mapping works
+- [ ] Processing completes
+- [ ] Reports generate correctly
+- [ ] Gemini AI responds
+- [ ] Template fallback works
+
+### 24.2 Integration Points
+
+- OMR Excel upload → Response processing → Mastery update → Reports
+- Test creation → Blueprint storage → Teacher assignment → Student view
+- AI call → Cache → Fallback on failure
+
+---
+
+## 25. DEPLOYMENT PLAN
+
+### 25.1 Infrastructure
+
+- **Host:** Hostinger (existing plan, 49 slots remaining)
+- **Domain:** `vidya.monoloopproductions.in` (subdomain) OR `vidya.monoloop.in`
+- **Database:** MySQL on Hostinger
+- **SSL:** Let's Encrypt (free)
+- **Deployment:** Git pull via SSH
+
+### 25.2 Deployment Steps (same as Arya pattern)
+
+1. Create subdomain in hPanel
+2. Create MySQL database
+3. SSH to server
+4. `git clone` Vidya repo
+5. `composer install`
+6. Configure `.env`
+7. `php artisan migrate --force`
+8. `php artisan db:seed` (subjects + curriculum)
+9. `php artisan arya:fresh-install` (create admin)
+10. Storage link
+11. Cache routes/views/config
+12. Enable SSL
+13. Test
+14. Pilot onboarding
+
+---
+
+## APPENDIX A: KEY DECISIONS LOG
+
+| Decision | Choice | Reason |
+|----------|--------|--------|
+| Positioning | Complementary analytics | Don't fight 15-year ERPs |
+| Roles | 6 (not 7) | Sub-Admin = Test Operator merged |
+| Teacher assignment | Dropdown | Typist knows teachers |
+| Multi-teacher tests | Yes | Realistic for NEET (4 subjects) |
+| Test content storage | Lightweight | Teacher IP protection |
+| Test creation UI | Excel upload | Consistent with OMR upload |
+| Topic code format | SUBJECT-CHAP-TOPIC-SUB | Standardized, easy |
+| AI provider | Gemini 2.5 Flash | Free tier, Arya-proven |
+| Tech stack | 100% Arya reuse | Speed |
+| Timeline | 5-6 weeks | Aggressive but feasible |
+
+## APPENDIX B: COMPARISON WITH ARYA
+
+| Metric | Arya | Vidya |
+|--------|------|-------|
+| Pages | 52 | 48 |
+| DB Tables | 21 | 25 |
+| Roles | 4 | 6 |
+| Subjects | 8+ | 3-4 |
+| Build time | 5 weeks | 5-6 weeks |
+| USP | Subtopic mastery | Subtopic mastery |
+| Market TAM | Schools | Coaching (bigger) |
+
+---
+
+## 🏆 BLUEPRINT STATUS: LOCKED ✅
+
+**This document + VIDYA_CONTEXT.md = Vidya's complete specification.**
+
+**Next:** Start Week 1, Day 1 execution.
+
+**Build ready. No more planning. Time to ship.**
+
+---
+
+*Document version: 1.0*
+*Created: April 24, 2026*
+*Founder: Kavish Sharma*
+*Product: Vidya*
+*Companion to: VIDYA_CONTEXT.md*
+
+🚩 *Jai Shri Ram*
