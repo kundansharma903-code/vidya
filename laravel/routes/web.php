@@ -15,7 +15,10 @@ use App\Http\Controllers\SubAdmin\DashboardController as SubAdminDashboardContro
 use App\Http\Controllers\SubAdmin\StudentController as SubAdminStudentController;
 use App\Http\Controllers\SubAdmin\TestController as SubAdminTestController;
 use App\Http\Controllers\SubAdmin\UploadController as SubAdminUploadController;
+use App\Http\Controllers\SubAdmin\ResultController as SubAdminResultController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
+use App\Http\Controllers\Teacher\TeacherController;
 use Illuminate\Support\Facades\Route;
 
 // --- Public Routes ---
@@ -110,7 +113,16 @@ Route::middleware(['auth', 'scope.institute'])->group(function () {
 
     // Teacher
     Route::prefix('teacher')->middleware('role:teacher')->group(function () {
-        Route::get('/dashboard', fn() => 'Teacher Dashboard — coming soon')->name('teacher.dashboard');
+        Route::get('/dashboard',              [TeacherDashboardController::class, 'index'])->name('teacher.dashboard');
+        Route::get('/students',               [TeacherController::class, 'students'])->name('teacher.students');
+        Route::get('/students/{student}',     [TeacherController::class, 'studentDetail'])->name('teacher.students.detail');
+        Route::get('/heatmap',                [TeacherController::class, 'heatmap'])->name('teacher.heatmap');
+        Route::get('/insights',               [TeacherController::class, 'insights'])->name('teacher.insights');
+        Route::get('/weak-topics',            [TeacherController::class, 'weakTopics'])->name('teacher.weak-topics');
+        Route::get('/topics/{topic_code}',    [TeacherController::class, 'topicDetail'])->name('teacher.topics.detail');
+        Route::get('/tests',                  [TeacherController::class, 'tests'])->name('teacher.tests');
+        Route::get('/notifications',          [TeacherController::class, 'notifications'])->name('teacher.notifications');
+        Route::get('/help',                   [TeacherController::class, 'help'])->name('teacher.help');
     });
 
     // Typist
@@ -136,7 +148,9 @@ Route::middleware(['auth', 'scope.institute'])->group(function () {
         Route::post('/results/upload/{test}/map',    [SubAdminUploadController::class, 'saveMapping'])->name('sub-admin.results.upload.save-map');
         Route::get('/results/upload/{test}/analyze', [SubAdminUploadController::class, 'showAnalyze'])->name('sub-admin.results.upload.analyze');
         Route::post('/results/upload/{test}/analyze',[SubAdminUploadController::class, 'runAnalysis'])->name('sub-admin.results.upload.run');
-        Route::get('/results/history',               fn() => 'Upload History — coming soon')->name('sub-admin.results.history');
+        Route::get('/results/history',               [SubAdminResultController::class, 'history'])->name('sub-admin.results.history');
+        Route::get('/tests/{test}/results',          [SubAdminResultController::class, 'testResults'])->name('sub-admin.tests.results');
+        Route::get('/tests/{test}/results/{student}',[SubAdminResultController::class, 'studentResult'])->name('sub-admin.tests.student-result');
 
         // Students (read-only)
         Route::get('/students', [SubAdminStudentController::class, 'index'])->name('sub-admin.students');

@@ -109,7 +109,7 @@ $tabs = [
                 };
                 $actionUrl = match($cfg['action']) {
                     'Upload' => $routeExists('sub-admin.results.upload') ? route('sub-admin.results.upload') . '?test_id=' . $test->id : '#',
-                    'View'   => '#',
+                    'View'   => $routeExists('sub-admin.tests.results') ? route('sub-admin.tests.results', $test->id) : '#',
                     'Edit'   => $routeExists('sub-admin.tests.create') ? route('sub-admin.tests.create') : '#',
                     default  => '#',
                 };
