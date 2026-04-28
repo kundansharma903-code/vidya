@@ -18,8 +18,16 @@
 /public/hot
 /public/storage
 /storage/*.key
+/storage/logs/*
 /storage/pail
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
 /vendor
+
+# Utility / handover scripts (not for production)
+cleanup_for_handover.php
+audit_before_clean.php
 _ide_helper.php
 Homestead.json
 Homestead.yaml

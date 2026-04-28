@@ -1,190 +1,167 @@
-# Vidya — Coaching Institute Analytics SaaS
+# Vidya — Coaching Analytics SaaS
 
-> **Topic-level mastery tracking for NEET and IIT-JEE coaching institutes. Sister product to Arya (school analytics).**
+> Topic-level mastery tracking for NEET and IIT-JEE coaching institutes.
+> Sister product to [Arya](https://github.com/kundansharma903-code/arya) (school analytics).
 
----
-
-## 🧭 Quick Navigation (for AI assistants)
-
-**If this is a new chat**, read these files in order to get full context:
-
-1. [README.md](./README.md) — You are here
-2. [DECISIONS.md](./DECISIONS.md) — **Start here.** All locked decisions in one place
-3. [VIDYA_CONTEXT.md](./VIDYA_CONTEXT.md) — Business concept, positioning, roles
-4. [VIDYA_BLUEPRINT.md](./VIDYA_BLUEPRINT.md) — Technical blueprint (25 tables, 48 pages, 5-week build plan)
-5. [DESIGN_TOKENS.md](./DESIGN_TOKENS.md) — Colors, typography, spacing (dark theme, blue accent)
-6. [FIGMA_INVENTORY.md](./FIGMA_INVENTORY.md) — All 27 designed screens with IDs
-7. [FIGMA_LINKS.md](./FIGMA_LINKS.md) — Quick-access Figma screen links
+**Status: MVP COMPLETE — Production-ready**
 
 ---
 
-## 👤 Founder
+## What It Is
 
-**Kavish Sharma** (Jaipur, Rajasthan, India)
-- Non-technical founder
-- Hinglish (Hindi + English) communication style
-- Building bootstrap, pragmatic, ₹0 extra budget where possible
-- Works in Claude chat + Claude Code (terminal) + Figma
+Vidya sits alongside your existing coaching ERP (ScholarSERP, Proctur, Addmen). Upload your OMR results as Excel — Vidya adds subtopic-level academic mastery analytics your current software doesn't have.
 
-## 🏢 Previous Product
-
-**Arya** — School analytics SaaS for CBSE schools
-- Status: **LIVE** at https://monoloopproductions.in
-- Repo: https://github.com/kundansharma903-code/arya
-- Pilot: DPS Jaipur
-- Stack: Laravel 13.5.0, PHP 8.3.30, MySQL 8.0, Blade + Tailwind + Alpine.js
-- 45+ features, 5-week build, git-tagged v1.0-live-production
-
----
-
-## 🎯 Vidya — What It Is
-
-**One-line pitch:**
-> "Keep your existing coaching ERP (ScholarSERP, Proctur, Addmen). Add Vidya for ₹X per student per year and get topic-level mastery analytics your current software doesn't have."
-
-**Core USP:**
-Subtopic-level academic mastery tracking. Where competitors show "Physics: 65%", Vidya shows:
+Where competitors show "Physics: 65%", Vidya shows:
 ```
 Physics > Mechanics > Kinematics > Motion in 1D: 42%
 Physics > Mechanics > Kinematics > Projectile Motion: 78%
 ```
 
-**Target Market:**
-Indian coaching institutes preparing students for NEET (medical) and IIT-JEE (engineering) entrance exams.
-
-**Positioning:**
-NOT a replacement for existing ERPs. A complementary analytics layer that consumes their Excel outputs and adds what they don't have.
+**Target:** Indian coaching institutes preparing students for NEET and IIT-JEE.
 
 ---
 
-## 👥 Six Roles in Vidya
+## Tech Stack
 
-| Role | Access | Primary Job |
+| Layer | Technology |
+|---|---|
+| Backend | Laravel 13.6, PHP 8.4 |
+| Database | MySQL 8.0 |
+| Frontend | Blade + Alpine.js + Chart.js 4.4 |
+| Font | Inter |
+| Hosting | Hostinger (subdomain) |
+
+---
+
+## Roles (7 total)
+
+| Role | Accent | Primary Responsibility |
 |---|---|---|
-| **Owner** | Full | Institute head, sees everything |
-| **Academic Head** | Full read, limited write | Academic oversight |
-| **Admin** | Full system admin | Setup and management |
-| **Sub-Admin** | OMR upload + students | Day-to-day operations (Priya Sharma) |
-| **Teacher** | View-only for own subjects | Reviews their subject's data |
-| **Typist** | Test creation only | Digitizes question papers (Ravi Kumar) |
+| **Admin** | Blue #7a95c8 | Full system setup and management |
+| **Sub-Admin** | Blue #7a95c8 | Test creation, OMR upload, result analysis |
+| **Teacher** | Blue #7a95c8 | View own subject heatmap and insights |
+| **Academic Head** | Blue #7a95c8 | Cross-subject analytics, teacher effectiveness |
+| **Owner** | Purple #a392c8 | Financial/ROI dashboard, staff decisions |
+| **Student** | Blue #7a95c8 | Personal results, mastery journey, goals |
+| **Reception** | Coral #c87064 | Walk-in student result lookup |
 
 ---
 
-## 📚 Courses Supported
+## Local Setup
 
-| Course | Subjects | Questions per Full Test |
-|---|---|---|
-| **NEET** | Physics + Chemistry + Zoology + Botany | 180 |
-| **IIT-JEE** | Physics + Chemistry + Mathematics | 90 |
+### Prerequisites
+- PHP 8.3+ with extensions: pdo_mysql, mbstring, openssl, tokenizer, xml, ctype, json
+- MySQL 8.0+
+- Composer 2+
 
-**Test paper structure:** ONE paper contains ALL subjects (not separate per-subject tests).
+### Steps
+```bash
+git clone https://github.com/kundansharma903-code/vidya.git
+cd vidya/laravel
 
----
+composer install
 
-## 🔑 Key Architectural Decisions
-
-✅ **Multi-subject in one paper** (180 Qs NEET / 90 Qs JEE)
-✅ **Multi-teacher per test** (one teacher per subject)
-✅ **Lightweight storage** — only answer key + topic codes, NOT question text (teacher IP protection)
-✅ **Topic Code format:** `[SUBJECT]-[CHAPTER]-[TOPIC]-[SUBTOPIC]` (e.g., `P-MEC-KIN-01`)
-✅ **Excel-based workflows** — test creation via Excel upload, OMR responses via Excel import
-✅ **Dark theme + blue accent** (#7a95c8) to differentiate from Arya's gold
-
-See [DECISIONS.md](./DECISIONS.md) for the complete list.
-
----
-
-## 🏗️ Tech Stack (Planned — same as Arya)
-
-- **Backend:** Laravel 13.5.0, PHP 8.3.30, MySQL 8.0
-- **Frontend:** Blade + Tailwind CSS + Alpine.js + Chart.js 4.4.0
-- **Font:** Inter
-- **AI:** Gemini 2.5 Flash (for insights generation)
-- **Hosting:** Same as Arya initially (monoloopproductions.in)
-- **Domain:** `vidya.monoloopproductions.in` (subdomain) → later standalone
-
----
-
-## 📊 Current Status
-
-### ✅ Done
-- Business concept locked (6 roles, multi-subject, multi-teacher)
-- VIDYA_CONTEXT.md — 39 KB, 1,390 lines
-- VIDYA_BLUEPRINT.md — 77 KB, 2,557 lines (25 SQL tables, ~900 subtopics, ~110 API routes)
-- Design tokens locked (blue accent, dark theme)
-- **27 Figma screens designed** (~56% coverage of 48 total)
-  - Admin: 15 screens ✅
-  - Typist: 8 screens ✅
-  - Sub-Admin: 6 screens ✅ (Dashboard + OMR 4-step flow + Upload History)
-
-### ⏳ Pending (Design Phase)
-- Owner dashboard + reports
-- Academic Head dashboard
-- Teacher dashboard + Class Heatmap (key differentiator from Arya)
-- Reports: Institute Overview, Batch Comparison, Teaching Health
-- Modals: Add Student, Import Flow
-
-### ⏳ Pending (Build Phase — after design)
-- Excel format finalization (columns for test creation, OMR response, curriculum import)
-- Laravel project setup + GitHub repo
-- 25 migrations
-- Seeders (subjects + NEET 480 subtopics + JEE 420 subtopics ≈ 900 total)
-- Authentication for all 6 roles
-- 5-week build schedule (see VIDYA_BLUEPRINT.md Section 25)
-
----
-
-## 🎨 Figma
-
-**File:** https://www.figma.com/design/lgUeyshjJH2kkFkQXxDZjH/Vidya-—-Designs
-**File Key:** `lgUeyshjJH2kkFkQXxDZjH`
-**Page:** `🖼 Screens` (0:1)
-
-See [FIGMA_INVENTORY.md](./FIGMA_INVENTORY.md) for full screen-by-screen map with Figma node IDs.
-
----
-
-## 📝 How to Resume Work in a New Chat
-
-Copy-paste this prompt into any new Claude chat:
-
-```
-Hi, I'm Kavish Sharma. I'm building Vidya — coaching institute analytics SaaS.
-
-All context is in my public GitHub repo:
-https://github.com/kundansharma903-code/vidya
-
-Please read these files first before answering:
-1. README.md
-2. DECISIONS.md
-3. VIDYA_CONTEXT.md
-4. VIDYA_BLUEPRINT.md
-5. FIGMA_INVENTORY.md
-
-Figma file: https://www.figma.com/design/lgUeyshjJH2kkFkQXxDZjH
-(File Key: lgUeyshjJH2kkFkQXxDZjH)
-
-My communication style: Hinglish (Hindi + English mixed), casual but technical.
-
-Continue where we left off. Ask me what's next if unclear.
+cp .env.example .env
+php artisan key:generate
 ```
 
+Edit `.env` with your DB credentials:
+```env
+DB_DATABASE=vidya
+DB_USERNAME=root
+DB_PASSWORD=your_password
+```
+
+```bash
+php artisan migrate
+php artisan db:seed
+
+# Start server (artisan serve may fail on some Windows setups — use this instead)
+php -S 127.0.0.1:8000 -t public
+```
+
+Visit: http://127.0.0.1:8000/login
+
 ---
 
-## 📁 Repo Structure (flat — all at root)
+## Test Credentials (after fresh seed)
+
+| Role | Username | Password |
+|---|---|---|
+| Admin | kavish101 | password123 |
+| Sub-Admin | priya_sharma | password123 |
+| Teacher | amit_gupta | password123 |
+| Academic Head | meera_krishnan | password123 |
+| Owner | sanjay_agarwal | password123 |
+| Student | aarav_mehta | password123 |
+| Reception | neha_verma | password123 |
+
+> Change all passwords immediately after first login on production.
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `APP_KEY` | Generate with `php artisan key:generate` |
+| `APP_URL` | Your domain (e.g. `https://vidya.monoloopproductions.in`) |
+| `DB_HOST` | MySQL host |
+| `DB_DATABASE` | Database name |
+| `DB_USERNAME` | DB user |
+| `DB_PASSWORD` | DB password |
+| `SESSION_DRIVER` | Use `database` for production |
+| `CACHE_STORE` | Use `database` for production |
+
+See `.env.production.example` for full production template.
+
+---
+
+## Deployment (Hostinger)
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for full step-by-step guide.
+
+Quick summary:
+1. Create subdomain `vidya.monoloopproductions.in` in hPanel
+2. Create MySQL DB in hPanel
+3. SSH in → `git clone` the repo
+4. `composer install --no-dev --optimize-autoloader`
+5. Configure `.env` with real credentials
+6. `php artisan migrate --force`
+7. `php artisan db:seed --force`
+8. Cache: `php artisan config:cache && php artisan route:cache && php artisan view:cache`
+9. `php artisan storage:link`
+
+---
+
+## Repo Structure
 
 ```
 vidya/
-├── README.md                    ← You are here
-├── DECISIONS.md                 ← Locked decisions (start here)
-├── VIDYA_CONTEXT.md             ← Business concept
-├── VIDYA_BLUEPRINT.md           ← Technical blueprint
-├── DESIGN_TOKENS.md             ← Colors, typography
-├── FIGMA_INVENTORY.md           ← 27 designed screens map
-├── FIGMA_LINKS.md               ← Quick-access Figma links
-└── .gitignore
+├── README.md
+├── DEPLOYMENT.md          ← Hostinger deployment guide
+├── DECISIONS.md           ← All locked architecture decisions
+├── VIDYA_CONTEXT.md       ← Business concept and positioning
+├── VIDYA_BLUEPRINT.md     ← Technical blueprint (25 tables, 48+ pages)
+├── DESIGN_TOKENS.md       ← Colors, typography, spacing
+├── FIGMA_INVENTORY.md     ← Designed screens with Figma node IDs
+├── FIGMA_LINKS.md         ← Quick-access Figma links
+├── .gitignore
+└── laravel/               ← Full Laravel application
+    ├── app/
+    ├── database/
+    ├── resources/views/
+    ├── routes/web.php
+    └── ...
 ```
 
 ---
 
-**Jai Shri Ram. 🚩**
+## Figma
+
+**File:** https://www.figma.com/design/lgUeyshjJH2kkFkQXxDZjH/Vidya-Designs
+See [FIGMA_INVENTORY.md](./FIGMA_INVENTORY.md) for screen-by-screen map.
+
+---
+
+**Built by Kavish Sharma, Jaipur — 2026**

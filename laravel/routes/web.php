@@ -19,6 +19,11 @@ use App\Http\Controllers\SubAdmin\ResultController as SubAdminResultController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Teacher\DashboardController as TeacherDashboardController;
 use App\Http\Controllers\Teacher\TeacherController;
+use App\Http\Controllers\AcademicHead\DashboardController as AHDashboardController;
+use App\Http\Controllers\AcademicHead\AcademicHeadController;
+use App\Http\Controllers\Owner\DashboardController as OwnerDashboardController;
+use App\Http\Controllers\Owner\OwnerController;
+use App\Http\Controllers\Reception\ReceptionController;
 use Illuminate\Support\Facades\Route;
 
 // --- Public Routes ---
@@ -103,12 +108,33 @@ Route::middleware(['auth', 'scope.institute'])->group(function () {
 
     // Academic Head
     Route::prefix('academic-head')->middleware('role:academic_head,owner')->group(function () {
-        Route::get('/dashboard', fn() => 'Academic Head Dashboard — coming soon')->name('academic-head.dashboard');
+        Route::get('/dashboard',              [AHDashboardController::class,    'index'])->name('academic-head.dashboard');
+        Route::get('/curriculum-coverage',    [AcademicHeadController::class,  'curriculumCoverage'])->name('academic-head.curriculum-coverage');
+        Route::get('/test-quality',           [AcademicHeadController::class,  'testQuality'])->name('academic-head.test-quality');
+        Route::get('/subject-performance',                        [AcademicHeadController::class, 'subjectPerformance'])->name('academic-head.subject-performance');
+        Route::get('/subject-performance/{subject_id}/comparison', [AcademicHeadController::class, 'subjectComparison'])->name('academic-head.subject-comparison');
+        Route::get('/teacher-effectiveness',              [AcademicHeadController::class, 'teacherEffectiveness'])->name('academic-head.teacher-effectiveness');
+        Route::get('/teacher-effectiveness/{teacher_id}', [AcademicHeadController::class, 'teacherDeepDive'])->name('academic-head.teacher-deep-dive');
+        Route::get('/teacher-assignments',    [AcademicHeadController::class,  'teacherAssignments'])->name('academic-head.teacher-assignments');
+        Route::get('/at-risk-students',       [AcademicHeadController::class,  'atRiskStudents'])->name('academic-head.at-risk-students');
+        Route::get('/notifications',          [AcademicHeadController::class,  'notifications'])->name('academic-head.notifications');
+        Route::get('/help',                   [AcademicHeadController::class,  'help'])->name('academic-head.help');
     });
 
     // Owner
-    Route::prefix('owner')->middleware('role:owner')->group(function () {
-        Route::get('/dashboard', fn() => 'Owner Dashboard — coming soon')->name('owner.dashboard');
+    Route::prefix('owner')->middleware('role:owner,admin')->group(function () {
+        Route::get('/dashboard',          [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
+        Route::get('/course-performance', [OwnerController::class, 'coursePerformance'])->name('owner.course-performance');
+        Route::get('/subject-roi',        [OwnerController::class, 'subjectRoi'])->name('owner.subject-roi');
+        Route::get('/subject-roi/{subject_id}', [OwnerController::class, 'subjectRoiDetail'])->name('owner.subject-roi.detail');
+        Route::get('/financial',          [OwnerController::class, 'financial'])->name('owner.financial');
+        Route::get('/teachers',           [OwnerController::class, 'teachers'])->name('owner.teachers');
+        Route::get('/teachers/{teacher_id}', [OwnerController::class, 'teacherDeepDive'])->name('owner.teacher-deep-dive');
+        Route::get('/staff-decisions',    [OwnerController::class, 'staffDecisions'])->name('owner.staff-decisions');
+        Route::get('/strategic-alerts',   [OwnerController::class, 'strategicAlerts'])->name('owner.strategic-alerts');
+        Route::get('/at-risk-students',   [OwnerController::class, 'atRiskStudents'])->name('owner.at-risk-students');
+        Route::get('/notifications',      [OwnerController::class, 'notifications'])->name('owner.notifications');
+        Route::get('/help',               [OwnerController::class, 'help'])->name('owner.help');
     });
 
     // Teacher
@@ -123,6 +149,17 @@ Route::middleware(['auth', 'scope.institute'])->group(function () {
         Route::get('/tests',                  [TeacherController::class, 'tests'])->name('teacher.tests');
         Route::get('/notifications',          [TeacherController::class, 'notifications'])->name('teacher.notifications');
         Route::get('/help',                   [TeacherController::class, 'help'])->name('teacher.help');
+    });
+
+    // Reception
+    Route::prefix('reception')->middleware('role:reception,admin,owner')->group(function () {
+        Route::get('/dashboard',                            [ReceptionController::class, 'dashboard'])->name('reception.dashboard');
+        Route::get('/students',                             [ReceptionController::class, 'students'])->name('reception.students');
+        Route::get('/tests',                                [ReceptionController::class, 'tests'])->name('reception.tests');
+        Route::get('/tests/{test_id}',                      [ReceptionController::class, 'testResults'])->name('reception.test-results');
+        Route::get('/students/{student_id}/tests/{test_id}',[ReceptionController::class, 'studentResult'])->name('reception.student-result');
+        Route::get('/walk-ins',                             [ReceptionController::class, 'walkIns'])->name('reception.walk-ins');
+        Route::get('/help',                                 [ReceptionController::class, 'help'])->name('reception.help');
     });
 
     // Typist

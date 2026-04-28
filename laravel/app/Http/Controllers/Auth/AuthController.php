@@ -67,6 +67,7 @@ class AuthController extends Controller
             'sub_admin'     => '/sub-admin/dashboard',
             'teacher'       => '/teacher/dashboard',
             'typist'        => '/typist/dashboard',
+            'reception'     => '/reception/dashboard',
             default         => '/login',
         };
     }

@@ -1,0 +1,13 @@
+# Claude Code project data
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+.zed/
+.nova/
+.cursor/
