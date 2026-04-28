@@ -21,7 +21,7 @@ class StaffController extends Controller
 
         $query = DB::table('users')
             ->where('users.institute_id', $instituteId)
-            ->whereIn('users.role', ['owner', 'academic_head', 'admin', 'sub_admin', 'teacher', 'typist'])
+            ->whereIn('users.role', ['owner', 'academic_head', 'admin', 'sub_admin', 'teacher', 'reception'])
             ->leftJoin('user_batch_assignments as uba', 'uba.user_id', '=', 'users.id')
             ->leftJoin('subjects as ps', 'ps.id', '=', 'users.primary_subject_id')
             ->select(
@@ -53,10 +53,10 @@ class StaffController extends Controller
 
         $stats = DB::table('users')
             ->where('institute_id', $instituteId)
-            ->whereIn('role', ['owner', 'academic_head', 'admin', 'sub_admin', 'teacher', 'typist'])
+            ->whereIn('role', ['owner', 'academic_head', 'admin', 'sub_admin', 'teacher', 'reception'])
             ->selectRaw('COUNT(*) as total, SUM(is_active) as active_count,
                 SUM(CASE WHEN role = "teacher" THEN 1 ELSE 0 END) as teacher_count,
-                SUM(CASE WHEN role = "typist" THEN 1 ELSE 0 END) as typist_count')
+                SUM(CASE WHEN role = "reception" THEN 1 ELSE 0 END) as reception_count')
             ->first();
 
         $subjects = DB::table('subjects')
@@ -80,7 +80,7 @@ class StaffController extends Controller
             'email'              => 'required|email|max:150|unique:users,email',
             'username'           => 'required|string|max:50|unique:users,username',
             'password'           => 'required|string|min:6',
-            'role'               => 'required|in:academic_head,admin,sub_admin,teacher,typist',
+            'role'               => 'required|in:owner,academic_head,admin,sub_admin,teacher,reception',
             'phone'              => 'nullable|string|max:15',
             'primary_subject_id' => 'nullable|integer|exists:subjects,id|required_if:role,teacher',
         ]);
@@ -105,7 +105,7 @@ class StaffController extends Controller
             'name'               => 'required|string|max:100',
             'email'              => 'required|email|max:150|unique:users,email,' . $id,
             'username'           => 'required|string|max:50|unique:users,username,' . $id,
-            'role'               => 'required|in:academic_head,admin,sub_admin,teacher,typist',
+            'role'               => 'required|in:owner,academic_head,admin,sub_admin,teacher,reception',
             'phone'              => 'nullable|string|max:15',
             'primary_subject_id' => 'nullable|integer|exists:subjects,id|required_if:role,teacher',
         ]);

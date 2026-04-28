@@ -17,7 +17,7 @@ $roleMeta = [
     'admin'         => ['label' => 'Admin',          'bg' => 'rgba(106,176,178,0.12)', 'color' => '#6ab0b2'],
     'sub_admin'     => ['label' => 'Sub-Admin',      'bg' => 'rgba(200,154,106,0.12)', 'color' => '#c89a6a'],
     'teacher'       => ['label' => 'Teacher',        'bg' => 'rgba(127,182,133,0.12)', 'color' => '#7fb685'],
-    'typist'        => ['label' => 'Typist',         'bg' => 'rgba(200,112,100,0.12)', 'color' => '#c87064'],
+    'reception'     => ['label' => 'Reception',      'bg' => 'rgba(200,112,100,0.12)', 'color' => '#c87064'],
 ];
 
 $subjectCodeColors = [
@@ -35,7 +35,7 @@ function assignedToLabel($member, $subjectNames) {
         case 'academic_head': return 'All reports · Cross-batch';
         case 'admin':         return 'System setup · All users';
         case 'sub_admin':     return 'Limited admin access';
-        case 'typist':        return 'Question entry';
+        case 'reception':     return 'Walk-in lookups';
         case 'teacher':
             $subj    = $subjectNames[$member->id] ?? null;
             $batches = $member->batch_count ?? 0;
@@ -58,7 +58,7 @@ function assignedToLabel($member, $subjectNames) {
                 {{ $stats->total ?? 0 }} total
                 · {{ $stats->active_count ?? 0 }} active
                 · {{ $stats->teacher_count ?? 0 }} teachers
-                · {{ $stats->typist_count ?? 0 }} typists
+                · {{ $stats->reception_count ?? 0 }} reception
             </p>
         </div>
         <button onclick="document.getElementById('addModal').style.display='flex'"
@@ -91,7 +91,7 @@ function assignedToLabel($member, $subjectNames) {
             <option value="admin"         {{ request('role') === 'admin'         ? 'selected' : '' }}>Admin</option>
             <option value="sub_admin"     {{ request('role') === 'sub_admin'     ? 'selected' : '' }}>Sub-Admin</option>
             <option value="teacher"       {{ request('role') === 'teacher'       ? 'selected' : '' }}>Teacher</option>
-            <option value="typist"        {{ request('role') === 'typist'        ? 'selected' : '' }}>Typist</option>
+            <option value="reception"     {{ request('role') === 'reception'     ? 'selected' : '' }}>Reception</option>
         </select>
         <select name="status" onchange="this.form.submit()"
                 style="background:#14141b;border:1px solid rgba(245,241,232,0.08);border-radius:8px;padding:9px 14px;font-size:13px;color:{{ request('status') ? '#f5f1e8' : '#6a665f' }};outline:none;cursor:pointer;">
@@ -368,11 +368,12 @@ function assignedToLabel($member, $subjectNames) {
                         <select name="role" id="edit_role" required class="role-select" style="{{ $IS }}cursor:pointer;"
                                 onfocus="this.style.borderColor='rgba(122,149,200,0.4)'" onblur="this.style.borderColor='rgba(245,241,232,0.10)'"
                                 onchange="handleRoleChange(this)">
+                            <option value="owner">Owner</option>
                             <option value="academic_head">Academic Head</option>
                             <option value="admin">Admin</option>
                             <option value="sub_admin">Sub-Admin</option>
                             <option value="teacher">Teacher</option>
-                            <option value="typist">Typist</option>
+                            <option value="reception">Reception</option>
                         </select>
                     </div>
                 </div>
