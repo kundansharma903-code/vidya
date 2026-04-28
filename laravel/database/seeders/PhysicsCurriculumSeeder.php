@@ -10,10 +10,10 @@ class PhysicsCurriculumSeeder extends Seeder
     public function run(): void
     {
         // Resolve institute via the admin user
-        $user = DB::table('users')->where('username', 'Shrisitaram')->first();
+        $user = DB::table('users')->where('role', 'admin')->first();
 
         if (! $user) {
-            $this->command->error('User Shrisitaram not found. Run AdminUserSeeder first.');
+            $this->command->error('No admin user found. Run ProductionAdminSeeder first.');
             return;
         }
 
