@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class StudentController extends Controller
 {
@@ -158,5 +161,158 @@ class StudentController extends Controller
             ->delete();
 
         return redirect()->route('admin.students')->with('success', 'Student removed.');
+    }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+        ]);
+
+        $instituteId = $this->instituteId();
+        $file        = $request->file('excel_file');
+
+        try {
+            $spreadsheet = IOFactory::load($file->getPathname());
+        } catch (\Exception $e) {
+            return back()->with('import_error', 'Could not read the file. Make sure it is a valid .xlsx or .csv file.');
+        }
+
+        $sheet = $spreadsheet->getActiveSheet();
+        $rows  = $sheet->toArray(null, true, true, true);
+
+        // Build batch name → id map (case-insensitive) for this institute
+        $batches = DB::table('batches')
+            ->where('institute_id', $instituteId)
+            ->where('is_active', true)
+            ->get(['id', 'name', 'course_id']);
+
+        $batchMap = [];
+        foreach ($batches as $b) {
+            $batchMap[strtolower(trim($b->name))] = $b;
+        }
+
+        $imported = 0;
+        $errors   = [];
+        $skipped  = 0;
+
+        foreach ($rows as $rowNum => $row) {
+            // Skip header row (row 1)
+            if ($rowNum === 1) continue;
+
+            $rollNo    = trim($row['A'] ?? '');
+            $name      = trim($row['B'] ?? '');
+            $batchName = trim($row['C'] ?? '');
+
+            // Skip fully empty rows
+            if ($rollNo === '' && $name === '' && $batchName === '') continue;
+
+            // Validate required columns
+            if ($rollNo === '') {
+                $errors[] = "Row {$rowNum}: Roll No is empty — skipped.";
+                $skipped++;
+                continue;
+            }
+            if ($name === '') {
+                $errors[] = "Row {$rowNum}: Student Name is empty — skipped.";
+                $skipped++;
+                continue;
+            }
+            if ($batchName === '') {
+                $errors[] = "Row {$rowNum}: Batch Name is empty — skipped.";
+                $skipped++;
+                continue;
+            }
+
+            // Batch lookup
+            $batch = $batchMap[strtolower($batchName)] ?? null;
+            if (!$batch) {
+                $errors[] = "Row {$rowNum} [{$rollNo} — {$name}]: Cannot find batch \"{$batchName}\" — student not imported.";
+                $skipped++;
+                continue;
+            }
+
+            // Skip duplicate roll numbers within this institute
+            $exists = DB::table('students')
+                ->where('institute_id', $instituteId)
+                ->where('roll_number', $rollNo)
+                ->exists();
+
+            if ($exists) {
+                $errors[] = "Row {$rowNum} [{$rollNo} — {$name}]: Roll number already exists — skipped.";
+                $skipped++;
+                continue;
+            }
+
+            DB::table('students')->insert([
+                'institute_id'  => $instituteId,
+                'batch_id'      => $batch->id,
+                'name'          => $name,
+                'roll_number'   => $rollNo,
+                'is_active'     => true,
+                'admission_date'=> now()->toDateString(),
+                'created_at'    => now(),
+                'updated_at'    => now(),
+            ]);
+
+            $imported++;
+        }
+
+        $summary = "Imported {$imported} student(s) successfully.";
+        if ($skipped > 0) {
+            $summary .= " {$skipped} row(s) had errors (see below).";
+        }
+
+        return redirect()->route('admin.students')
+            ->with('import_success', $summary)
+            ->with('import_errors', $errors);
+    }
+
+    public function downloadTemplate()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Students');
+
+        // Header row
+        $sheet->setCellValue('A1', 'Roll No');
+        $sheet->setCellValue('B1', 'Student Name');
+        $sheet->setCellValue('C1', 'Batch Name');
+
+        // Style header
+        $headerStyle = [
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => '1a1a2e']],
+            'alignment' => ['horizontal' => 'center'],
+        ];
+        $sheet->getStyle('A1:C1')->applyFromArray($headerStyle);
+
+        // Column widths
+        $sheet->getColumnDimension('A')->setWidth(15);
+        $sheet->getColumnDimension('B')->setWidth(30);
+        $sheet->getColumnDimension('C')->setWidth(25);
+
+        // Sample rows
+        $samples = [
+            ['A2' => '2025001', 'B2' => 'Aarav Mehta',   'C2' => 'NEET-2025-Batch-A'],
+            ['A3' => '2025002', 'B3' => 'Priya Sharma',  'C3' => 'NEET-2025-Batch-A'],
+            ['A4' => '2025003', 'B4' => 'Rohan Verma',   'C4' => 'JEE-2025-Batch-B'],
+        ];
+        foreach ($samples as $sample) {
+            foreach ($sample as $cell => $val) {
+                $sheet->setCellValue($cell, $val);
+            }
+        }
+
+        // Freeze header row
+        $sheet->freezePane('A2');
+
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, 'vidya_students_import_template.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 }

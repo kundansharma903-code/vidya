@@ -67,11 +67,13 @@ Route::middleware(['auth', 'scope.institute'])->group(function () {
         Route::delete('/batches/{id}',         [BatchController::class, 'destroy'])->name('admin.batches.destroy');
 
         // Students
-        Route::get('/students',                [StudentController::class, 'index'])->name('admin.students');
-        Route::post('/students',               [StudentController::class, 'store'])->name('admin.students.store');
-        Route::put('/students/{id}',           [StudentController::class, 'update'])->name('admin.students.update');
-        Route::patch('/students/{id}/toggle',  [StudentController::class, 'toggle'])->name('admin.students.toggle');
-        Route::delete('/students/{id}',        [StudentController::class, 'destroy'])->name('admin.students.destroy');
+        Route::get('/students',                     [StudentController::class, 'index'])->name('admin.students');
+        Route::post('/students',                    [StudentController::class, 'store'])->name('admin.students.store');
+        Route::put('/students/{id}',                [StudentController::class, 'update'])->name('admin.students.update');
+        Route::patch('/students/{id}/toggle',       [StudentController::class, 'toggle'])->name('admin.students.toggle');
+        Route::delete('/students/{id}',             [StudentController::class, 'destroy'])->name('admin.students.destroy');
+        Route::post('/students/import',             [StudentController::class, 'importExcel'])->name('admin.students.import');
+        Route::get('/students/import/template',     [StudentController::class, 'downloadTemplate'])->name('admin.students.import.template');
 
         // Assignments
         Route::get('/assignments',         [AssignmentController::class, 'index'])->name('admin.assignments');

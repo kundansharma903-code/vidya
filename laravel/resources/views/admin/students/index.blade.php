@@ -29,8 +29,11 @@ $avatarPalette = [
             </div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-            <button style="display:flex;align-items:center;gap:8px;background:#14141b;border:1px solid rgba(245,241,232,0.10);border-radius:6px;padding:10px 14px;font-size:13px;font-weight:500;color:#f5f1e8;cursor:pointer;">
-                <span style="color:#a8a39c;font-size:14px;">↑</span>
+            <button onclick="document.getElementById('importModal').style.display='flex'"
+                    style="display:flex;align-items:center;gap:8px;background:#14141b;border:1px solid rgba(245,241,232,0.10);border-radius:6px;padding:10px 14px;font-size:13px;font-weight:500;color:#f5f1e8;cursor:pointer;"
+                    onmouseover="this.style.borderColor='rgba(122,149,200,0.4)'"
+                    onmouseout="this.style.borderColor='rgba(245,241,232,0.10)'">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#a8a39c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 Import from Excel
             </button>
             <button onclick="document.getElementById('addModal').style.display='flex'"
@@ -45,6 +48,28 @@ $avatarPalette = [
     @if(session('success'))
     <div style="background:rgba(127,182,133,0.10);border:1px solid rgba(127,182,133,0.25);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#7fb685;">
         {{ session('success') }}
+    </div>
+    @endif
+
+    @if(session('import_success'))
+    <div style="background:rgba(127,182,133,0.10);border:1px solid rgba(127,182,133,0.25);border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+        <p style="font-size:13px;color:#7fb685;margin:0 0 {{ session('import_errors') ? '10px' : '0' }};">
+            ✓ {{ session('import_success') }}
+        </p>
+        @if(session('import_errors'))
+        <div style="background:rgba(200,112,100,0.08);border:1px solid rgba(200,112,100,0.2);border-radius:6px;padding:10px 14px;margin-top:8px;">
+            <p style="font-size:11px;font-weight:600;color:#c87064;margin:0 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Rows with errors:</p>
+            @foreach(session('import_errors') as $err)
+            <p style="font-size:12px;color:#a8a39c;margin:2px 0;">{{ $err }}</p>
+            @endforeach
+        </div>
+        @endif
+    </div>
+    @endif
+
+    @if(session('import_error'))
+    <div style="background:rgba(200,112,100,0.10);border:1px solid rgba(200,112,100,0.25);border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#c87064;">
+        {{ session('import_error') }}
     </div>
     @endif
 
@@ -306,6 +331,88 @@ $avatarPalette = [
     </div>
 </div>
 
+{{-- Import Modal --}}
+<div id="importModal" style="display:none;position:fixed;inset:0;background:rgba(8,8,10,0.85);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#14141b;border:1px solid rgba(245,241,232,0.12);border-radius:14px;width:100%;max-width:520px;">
+
+        {{-- Header --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid rgba(245,241,232,0.06);">
+            <div>
+                <h3 style="font-size:16px;font-weight:700;color:#f5f1e8;margin:0 0 3px;letter-spacing:-0.3px;">Import Students from Excel</h3>
+                <p style="font-size:12px;color:#6a665f;margin:0;">Upload .xlsx or .csv — Roll No, Name, Batch Name</p>
+            </div>
+            <button onclick="document.getElementById('importModal').style.display='none'"
+                    style="width:30px;height:30px;background:#0f0f14;border:1px solid rgba(245,241,232,0.08);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6a665f;font-size:16px;flex-shrink:0;">×</button>
+        </div>
+
+        <form method="POST" action="{{ route('admin.students.import') }}" enctype="multipart/form-data">
+            @csrf
+            <div style="padding:22px 24px;display:flex;flex-direction:column;gap:18px;">
+
+                {{-- Download template --}}
+                <div style="background:rgba(122,149,200,0.06);border:1px solid rgba(122,149,200,0.15);border-radius:8px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <div>
+                        <p style="font-size:12px;font-weight:600;color:#7a95c8;margin:0 0 3px;">Step 1 — Download Template</p>
+                        <p style="font-size:11px;color:#6a665f;margin:0;">3 columns: Roll No · Student Name · Batch Name</p>
+                    </div>
+                    <a href="{{ route('admin.students.import.template') }}"
+                       style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:rgba(122,149,200,0.12);border:1px solid rgba(122,149,200,0.25);border-radius:6px;font-size:12px;font-weight:600;color:#7a95c8;text-decoration:none;white-space:nowrap;"
+                       onmouseover="this.style.background='rgba(122,149,200,0.2)'"
+                       onmouseout="this.style.background='rgba(122,149,200,0.12)'">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3 5l3 3 3-3M1 10h10" stroke="#7a95c8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Download
+                    </a>
+                </div>
+
+                {{-- Rules --}}
+                <div style="background:#0f0f14;border:1px solid rgba(245,241,232,0.06);border-radius:8px;padding:12px 16px;">
+                    <p style="font-size:11px;font-weight:600;color:#a8a39c;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.5px;">Rules</p>
+                    <div style="display:flex;flex-direction:column;gap:5px;">
+                        <p style="font-size:12px;color:#6a665f;margin:0;">· Column A = Roll No &nbsp; Column B = Student Name &nbsp; Column C = Batch Name</p>
+                        <p style="font-size:12px;color:#6a665f;margin:0;">· Batch must already exist in the system (exact name match)</p>
+                        <p style="font-size:12px;color:#6a665f;margin:0;">· If batch not found → that row is skipped with an error message</p>
+                        <p style="font-size:12px;color:#6a665f;margin:0;">· Duplicate roll numbers are skipped automatically</p>
+                        <p style="font-size:12px;color:#6a665f;margin:0;">· Row 1 is the header — do not delete it</p>
+                    </div>
+                </div>
+
+                {{-- File upload --}}
+                <div>
+                    <label style="display:block;font-size:11px;font-weight:600;color:#a8a39c;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px;">Step 2 — Upload File</label>
+                    <label id="dropZone"
+                           style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#0f0f14;border:2px dashed rgba(245,241,232,0.10);border-radius:8px;padding:28px 20px;cursor:pointer;transition:border-color 0.15s;"
+                           onmouseover="this.style.borderColor='rgba(122,149,200,0.4)'"
+                           onmouseout="this.style.borderColor='rgba(245,241,232,0.10)'"
+                           ondragover="event.preventDefault();this.style.borderColor='rgba(122,149,200,0.6)'"
+                           ondragleave="this.style.borderColor='rgba(245,241,232,0.10)'"
+                           ondrop="handleDrop(event)">
+                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="rgba(122,149,200,0.08)"/><path d="M14 8v8M11 13l3-3 3 3M8 20h12" stroke="#7a95c8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <p id="dropLabel" style="font-size:13px;color:#a8a39c;margin:0;text-align:center;">Click to browse or drag & drop<br><span style="font-size:11px;color:#6a665f;">.xlsx or .csv &nbsp;·&nbsp; max 5 MB</span></p>
+                        <input type="file" name="excel_file" id="excelFile" accept=".xlsx,.xls,.csv"
+                               style="display:none;" onchange="updateDropLabel(this)">
+                    </label>
+                    @error('excel_file')
+                    <p style="font-size:11px;color:#c87064;margin:6px 0 0;">{{ $message }}</p>
+                    @enderror
+                </div>
+
+            </div>
+
+            <div style="padding:16px 24px;border-top:1px solid rgba(245,241,232,0.06);display:flex;align-items:center;justify-content:flex-end;gap:10px;">
+                <button type="button" onclick="document.getElementById('importModal').style.display='none'"
+                        style="padding:9px 18px;background:rgba(245,241,232,0.05);border:1px solid rgba(245,241,232,0.08);border-radius:8px;font-size:13px;color:#a8a39c;cursor:pointer;">
+                    Cancel
+                </button>
+                <button type="submit"
+                        style="display:flex;align-items:center;gap:6px;padding:9px 18px;background:#7a95c8;color:#08080a;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v8M3.5 6l3 3 3-3M1 11h11" stroke="#08080a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Import Students
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- Add Modal --}}
 <div id="addModal" style="display:none;position:fixed;inset:0;background:rgba(8,8,10,0.8);z-index:1000;align-items:center;justify-content:center;padding:20px;">
     <div style="background:#14141b;border:1px solid rgba(245,241,232,0.08);border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;">
@@ -405,11 +512,31 @@ function openEditModal(s) {
     document.getElementById('editModal').style.display = 'flex';
 }
 
-['addModal','editModal'].forEach(function(id) {
+['addModal','editModal','importModal'].forEach(function(id) {
     document.getElementById(id).addEventListener('click', function(e) {
         if (e.target === this) this.style.display = 'none';
     });
 });
+
+function updateDropLabel(input) {
+    var label = document.getElementById('dropLabel');
+    if (input.files && input.files[0]) {
+        label.innerHTML = '<strong style="color:#7a95c8;">' + input.files[0].name + '</strong><br><span style="font-size:11px;color:#6a665f;">Ready to import</span>';
+        document.getElementById('dropZone').style.borderColor = 'rgba(127,182,133,0.5)';
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    var input = document.getElementById('excelFile');
+    var zone  = document.getElementById('dropZone');
+    var files = e.dataTransfer.files;
+    if (files.length > 0) {
+        input.files = files;
+        updateDropLabel(input);
+    }
+    zone.style.borderColor = 'rgba(245,241,232,0.10)';
+}
 
 @if($errors->any())
 document.getElementById('addModal').style.display = 'flex';
