@@ -150,10 +150,11 @@ class StaffController extends Controller
 
     public function destroy(int $id)
     {
+        // Allow admin to delete any staff including owner (testing phase)
         DB::table('users')
             ->where('id', $id)
             ->where('institute_id', $this->instituteId())
-            ->whereNotIn('role', ['owner'])
+            ->whereNot('id', Auth::id())   // prevent self-delete
             ->delete();
 
         return redirect()->route('admin.staff')->with('success', 'Staff member removed.');

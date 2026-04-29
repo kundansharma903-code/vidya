@@ -227,7 +227,6 @@ function assignedToLabel($member, $subjectNames) {
                     {{-- Actions --}}
                     <td style="padding:14px 16px;text-align:right;">
                         <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;">
-                            @if($member->role !== 'owner')
                             <button onclick="openEditModal({{ json_encode($member) }})"
                                     style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:rgba(245,241,232,0.05);border:1px solid rgba(245,241,232,0.08);border-radius:6px;cursor:pointer;"
                                     title="Edit"
@@ -251,8 +250,9 @@ function assignedToLabel($member, $subjectNames) {
                                     @endif
                                 </button>
                             </form>
+                            @if($member->id !== Auth::id())
                             <form method="POST" action="{{ route('admin.staff.destroy', $member->id) }}" style="display:inline;"
-                                  onsubmit="return confirm('Remove {{ addslashes($member->name) }} from staff?')">
+                                  onsubmit="return confirm('Remove {{ addslashes($member->name) }} from staff? This cannot be undone.')">
                                 @csrf @method('DELETE')
                                 <button type="submit"
                                         style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:rgba(245,241,232,0.05);border:1px solid rgba(245,241,232,0.08);border-radius:6px;cursor:pointer;"
@@ -262,8 +262,6 @@ function assignedToLabel($member, $subjectNames) {
                                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M5 3V2h2v1M4 3v6h4V3" stroke="#c87064" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                 </button>
                             </form>
-                            @else
-                            <span style="font-size:11px;color:#6a665f;padding:0 8px;">Owner</span>
                             @endif
                         </div>
                     </td>
