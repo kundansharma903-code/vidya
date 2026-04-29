@@ -21,7 +21,7 @@
 
     {{-- Greeting --}}
     <div style="margin-bottom:22px;">
-        <h1 style="font-size:26px;font-weight:700;color:#f5f1e8;letter-spacing:-0.52px;margin:0 0 4px;">{{ $greeting }}, Dr. Meera 👋</h1>
+        <h1 style="font-size:26px;font-weight:700;color:#f5f1e8;letter-spacing:-0.52px;margin:0 0 4px;">{{ $greeting }}, {{ $user->name }} 👋</h1>
         <p style="font-size:13px;color:#a8a39c;margin:0;">Institute-wide academic overview · All subjects · All batches</p>
     </div>
 
