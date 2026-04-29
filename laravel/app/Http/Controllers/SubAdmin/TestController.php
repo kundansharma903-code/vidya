@@ -144,8 +144,9 @@ class TestController extends Controller
 
     private function generateTestCode(int $instituteId): string
     {
+        $code  = DB::table('institutes')->where('id', $instituteId)->value('code') ?? 'TEST';
         $count = DB::table('tests')->where('institute_id', $instituteId)->count();
-        return 'NEET-MOCK-' . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+        return strtoupper($code) . '-' . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
     }
 
     private function patternStats(string $pattern, float $correctMarks): array

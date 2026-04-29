@@ -30,7 +30,7 @@ class OwnerController extends Controller
 
         $monthlyCost = DB::table('users')
             ->where('institute_id', $instituteId)
-            ->whereIn('role', ['teacher', 'sub_admin', 'typist', 'academic_head'])
+            ->whereIn('role', ['teacher', 'sub_admin', 'reception', 'academic_head'])
             ->where('is_active', 1)
             ->sum('monthly_salary');
 
@@ -327,7 +327,7 @@ class OwnerController extends Controller
         // Per-teacher cost breakdown
         $staffBreakdown = DB::table('users')
             ->where('institute_id', $instituteId)
-            ->whereIn('role', ['teacher', 'sub_admin', 'typist', 'academic_head'])
+            ->whereIn('role', ['teacher', 'sub_admin', 'reception', 'academic_head'])
             ->where('is_active', 1)
             ->orderByDesc('monthly_salary')
             ->get(['id', 'name', 'role', 'monthly_salary', 'tenure_start']);

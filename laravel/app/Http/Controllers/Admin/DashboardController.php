@@ -19,7 +19,7 @@ class DashboardController extends Controller
             'total_students' => DB::table('students')->where('institute_id', $instituteId)->count(),
             'active_staff'   => DB::table('users')
                                     ->where('institute_id', $instituteId)
-                                    ->whereIn('role', ['teacher', 'typist', 'sub_admin', 'academic_head'])
+                                    ->whereIn('role', ['teacher', 'reception', 'sub_admin', 'academic_head'])
                                     ->where('is_active', true)
                                     ->count(),
         ];

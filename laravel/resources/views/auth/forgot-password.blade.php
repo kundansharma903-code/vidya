@@ -45,7 +45,7 @@
                 type="email"
                 name="email"
                 value="{{ old('email') }}"
-                placeholder="admin@abccoaching.in"
+                placeholder="your@email.com"
                 required
                 class="h-[44px] w-full rounded-[6px] px-[14px] text-[14px] outline-none placeholder:text-[#6a665f] focus:border-[#7a95c8]"
                 style="background-color: #0f0f14; border: 1px solid rgba(245,241,232,0.10); color: #f5f1e8;"

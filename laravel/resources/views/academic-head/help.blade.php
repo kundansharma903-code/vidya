@@ -13,7 +13,7 @@
         $sections = [
             ['Dashboard',            'dashboard',            'Institute health score (0-100) combining curriculum coverage, test quality, teacher effectiveness, and student retention. KPIs, subject performance tiles, and academic alerts.'],
             ['Curriculum Coverage',  'curriculum-coverage',  'Subject-wise topic coverage with urgency banner, weeks-remaining counter, and critical gaps showing topics never tested.'],
-            ['Test Quality',         'test-quality',         'Analyzes each test for topic diversity and coverage alignment. Grades tests A+/A/B/C. Includes recommendations for typists.'],
+            ['Test Quality',         'test-quality',         'Analyzes each test for topic diversity and coverage alignment. Grades tests A+/A/B/C. Includes improvement recommendations.'],
             ['Subject Performance',  'subject-performance',  'Deep-dive into each subject: average mastery, weak topic count, curriculum coverage, and correct/attempted stats.'],
             ['Teacher Effectiveness','teacher-effectiveness', 'Ranked list of all teachers by effectiveness score (class average − weak topic penalty). Top 3 podium + AI insight on underperformers.'],
             ['Teacher Assignments',  'teacher-assignments',  'Read-only view of which teacher covers which subject and which batches. Contact admin to modify.'],

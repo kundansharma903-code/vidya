@@ -41,7 +41,7 @@ class DashboardController extends Controller
         // ── Cost calculation ──────────────────────────────────────────────
         $allStaff = DB::table('users')
             ->where('institute_id', $instituteId)
-            ->whereIn('role', ['teacher', 'sub_admin', 'typist', 'academic_head'])
+            ->whereIn('role', ['teacher', 'sub_admin', 'reception', 'academic_head'])
             ->where('is_active', 1)
             ->get();
 

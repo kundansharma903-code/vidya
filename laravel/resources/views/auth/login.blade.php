@@ -38,7 +38,7 @@
                 type="text"
                 name="login"
                 value="{{ old('login') }}"
-                placeholder="admin@abccoaching.in"
+                placeholder="Username or email"
                 autocomplete="username"
                 required
                 class="h-[44px] w-full rounded-[6px] px-[14px] text-[14px] outline-none transition-colors placeholder:text-[#6a665f] focus:border-[#7a95c8]"
