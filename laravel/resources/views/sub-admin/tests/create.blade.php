@@ -17,13 +17,6 @@ $routeExists = function(string $name): bool {
         <p style="font-size:14px;color:#a8a39c;margin:0;">Just enter test metadata. Topic mapping comes from result Excel later.</p>
     </div>
 
-    {{-- Info banner --}}
-    <div style="background:rgba(122,149,200,0.08);border:1px solid rgba(122,149,200,0.3);border-radius:8px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;margin-bottom:22px;">
-        <span style="color:#7a95c8;font-weight:700;font-size:14px;flex-shrink:0;">ℹ</span>
-        <p style="font-size:12px;color:#a8a39c;margin:0;line-height:1.6;">
-            Vidya analytics-only platform hai. Paper banane ka kaam coaching ka hai. Excel upload se topic mapping auto-detect hoga.
-        </p>
-    </div>
 
     @if ($errors->any())
         <div style="background:rgba(224,82,82,0.1);border:1px solid rgba(224,82,82,0.3);border-radius:8px;padding:12px 16px;margin-bottom:22px;">
