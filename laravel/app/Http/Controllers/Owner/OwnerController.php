@@ -284,13 +284,13 @@ class OwnerController extends Controller
                 ->whereIn('student_id', $allStudentIds)
                 ->groupBy('student_id')
                 ->havingRaw('AVG(mastery_percentage) < 40')
-                ->count(DB::raw('DISTINCT student_id'));
+                ->pluck('student_id')->count();
         }
         $instWeakCount   = $nodeIds->isNotEmpty()
-            ? DB::table('student_subtopic_mastery')->whereIn('curriculum_node_id', $nodeIds->pluck('id'))->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->count(DB::raw('DISTINCT curriculum_node_id'))
+            ? DB::table('student_subtopic_mastery')->whereIn('curriculum_node_id', $nodeIds->pluck('id'))->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->pluck('curriculum_node_id')->count()
             : 0;
         $instStrongCount = $nodeIds->isNotEmpty()
-            ? DB::table('student_subtopic_mastery')->whereIn('curriculum_node_id', $nodeIds->pluck('id'))->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) >= 70')->count(DB::raw('DISTINCT curriculum_node_id'))
+            ? DB::table('student_subtopic_mastery')->whereIn('curriculum_node_id', $nodeIds->pluck('id'))->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) >= 70')->pluck('curriculum_node_id')->count()
             : 0;
 
         return view('owner.subject-roi-detail', compact(
@@ -364,7 +364,7 @@ class OwnerController extends Controller
                 ? (int) round(DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->avg('mastery_percentage') ?? 0)
                 : 0;
             $weakCount = ($nodeIds->isNotEmpty() && $studentIds->isNotEmpty())
-                ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->count(DB::raw('DISTINCT curriculum_node_id'))
+                ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->pluck('curriculum_node_id')->count()
                 : 0;
             $score = (int) max(0, min(100, $classAvg - ($weakCount * 2)));
 
@@ -414,14 +414,14 @@ class OwnerController extends Controller
             : 0;
 
         $weakCount = ($nodeIds->isNotEmpty() && $studentIds->isNotEmpty())
-            ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->count(DB::raw('DISTINCT curriculum_node_id'))
+            ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->pluck('curriculum_node_id')->count()
             : 0;
         $strongCount = ($nodeIds->isNotEmpty() && $studentIds->isNotEmpty())
-            ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) >= 70')->count(DB::raw('DISTINCT curriculum_node_id'))
+            ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) >= 70')->pluck('curriculum_node_id')->count()
             : 0;
 
         $atRiskCount = ($nodeIds->isNotEmpty() && $studentIds->isNotEmpty())
-            ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('student_id')->havingRaw('AVG(mastery_percentage) < 40')->count(DB::raw('DISTINCT student_id'))
+            ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('student_id')->havingRaw('AVG(mastery_percentage) < 40')->pluck('student_id')->count()
             : 0;
         $atRiskPct = $studentIds->count() > 0 ? (int) round($atRiskCount / $studentIds->count() * 100) : 0;
 
@@ -538,10 +538,10 @@ class OwnerController extends Controller
             $studentIds = DB::table('students')->where('institute_id', $instituteId)->whereIn('batch_id', $batchIds)->where('is_active', 1)->pluck('id');
 
             $classAvg  = ($nodeIds->isNotEmpty() && $studentIds->isNotEmpty()) ? (int) round(DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->avg('mastery_percentage') ?? 0) : 0;
-            $weakCount = ($nodeIds->isNotEmpty() && $studentIds->isNotEmpty()) ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->count(DB::raw('DISTINCT curriculum_node_id')) : 0;
+            $weakCount = ($nodeIds->isNotEmpty() && $studentIds->isNotEmpty()) ? DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->pluck('curriculum_node_id')->count() : 0;
             $atRiskPct = 0;
             if ($nodeIds->isNotEmpty() && $studentIds->count() > 0) {
-                $atRisk = DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('student_id')->havingRaw('AVG(mastery_percentage) < 40')->count(DB::raw('DISTINCT student_id'));
+                $atRisk = DB::table('student_subtopic_mastery')->whereIn('student_id', $studentIds)->whereIn('curriculum_node_id', $nodeIds)->groupBy('student_id')->havingRaw('AVG(mastery_percentage) < 40')->pluck('student_id')->count();
                 $atRiskPct = (int) round($atRisk / $studentIds->count() * 100);
             }
 
@@ -637,7 +637,7 @@ class OwnerController extends Controller
         }
 
         // At-risk students
-        $atRisk = DB::table('student_subtopic_mastery as m')->join('students as s', 's.id', '=', 'm.student_id')->where('s.institute_id', $instituteId)->where('s.is_active', 1)->groupBy('m.student_id')->havingRaw('AVG(m.mastery_percentage) < 40')->count(DB::raw('DISTINCT m.student_id'));
+        $atRisk = DB::table('student_subtopic_mastery as m')->join('students as s', 's.id', '=', 'm.student_id')->where('s.institute_id', $instituteId)->where('s.is_active', 1)->groupBy('m.student_id')->havingRaw('AVG(m.mastery_percentage) < 40')->pluck('m.student_id')->count();
         if ($atRisk > 50) {
             $alerts[] = ['level' => 'critical', 'category' => 'Students', 'msg' => "{$atRisk} students below 40% mastery — significant dropout risk.", 'action' => route('owner.at-risk-students')];
         } elseif ($atRisk > 20) {

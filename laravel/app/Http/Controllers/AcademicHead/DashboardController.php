@@ -120,7 +120,7 @@ class DashboardController extends Controller
                 ->whereIn('curriculum_node_id', $allNodeIds)
                 ->groupBy('curriculum_node_id')
                 ->havingRaw('AVG(mastery_percentage) < 40')
-                ->count(DB::raw('DISTINCT curriculum_node_id'));
+                ->pluck('curriculum_node_id')->count();
         }
 
         $atRiskCount = 0;
@@ -129,7 +129,7 @@ class DashboardController extends Controller
                 ->whereIn('curriculum_node_id', $allNodeIds)
                 ->groupBy('student_id')
                 ->havingRaw('AVG(mastery_percentage) < 40')
-                ->count(DB::raw('DISTINCT student_id'));
+                ->pluck('student_id')->count();
         }
 
         // ── Subject performance ─────────────────────────────────────────

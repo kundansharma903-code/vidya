@@ -81,7 +81,7 @@ class DashboardController extends Controller
                     ->whereIn('curriculum_node_id', $nodeIds)
                     ->groupBy('student_id')
                     ->havingRaw('AVG(mastery_percentage) < 40')
-                    ->count(DB::raw('DISTINCT student_id'));
+                    ->pluck('student_id')->count();
             }
         }
 

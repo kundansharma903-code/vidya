@@ -153,7 +153,7 @@ class AcademicHeadController extends Controller
                     ->whereIn('curriculum_node_id', $nodeIds)
                     ->groupBy('curriculum_node_id')
                     ->havingRaw('AVG(mastery_percentage) < 40')
-                    ->count(DB::raw('DISTINCT curriculum_node_id'))
+                    ->pluck('curriculum_node_id')->count()
                 : 0;
 
             $subjectData[] = [
@@ -220,7 +220,7 @@ class AcademicHeadController extends Controller
                     ->whereIn('curriculum_node_id', $nodeIds)
                     ->groupBy('curriculum_node_id')
                     ->havingRaw('AVG(mastery_percentage) < 40')
-                    ->count(DB::raw('DISTINCT curriculum_node_id'))
+                    ->pluck('curriculum_node_id')->count()
                 : 0;
 
             // Effectiveness score: classAvg - (weakTopics * 2), clamped 0-100
@@ -427,7 +427,7 @@ class AcademicHeadController extends Controller
                 ->whereIn('curriculum_node_id', $nodeIds)
                 ->groupBy('student_id')
                 ->havingRaw('AVG(mastery_percentage) < 40')
-                ->count(DB::raw('DISTINCT student_id'));
+                ->pluck('student_id')->count();
         }
 
         $atRiskPct = $studentIds->count() > 0
@@ -455,7 +455,7 @@ class AcademicHeadController extends Controller
                     ->whereIn('curriculum_node_id', $nodeIds)
                     ->groupBy('curriculum_node_id')
                     ->havingRaw('AVG(mastery_percentage) < 40')
-                    ->count(DB::raw('DISTINCT curriculum_node_id'))
+                    ->pluck('curriculum_node_id')->count()
                 : 0;
 
             $bAtRisk = ($nodeIds->isNotEmpty() && $bStudentIds->isNotEmpty())
@@ -464,7 +464,7 @@ class AcademicHeadController extends Controller
                     ->whereIn('curriculum_node_id', $nodeIds)
                     ->groupBy('student_id')
                     ->havingRaw('AVG(mastery_percentage) < 40')
-                    ->count(DB::raw('DISTINCT student_id'))
+                    ->pluck('student_id')->count()
                 : 0;
 
             $batchPerformance[] = [
@@ -537,10 +537,10 @@ class AcademicHeadController extends Controller
                 ? (int) round(DB::table('student_subtopic_mastery')->whereIn('student_id', $tStudents)->whereIn('curriculum_node_id', $tNodes)->avg('mastery_percentage') ?? 0)
                 : 0;
             $tWeak = ($tNodes->isNotEmpty() && $tStudents->isNotEmpty())
-                ? DB::table('student_subtopic_mastery')->whereIn('student_id', $tStudents)->whereIn('curriculum_node_id', $tNodes)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->count(DB::raw('DISTINCT curriculum_node_id'))
+                ? DB::table('student_subtopic_mastery')->whereIn('student_id', $tStudents)->whereIn('curriculum_node_id', $tNodes)->groupBy('curriculum_node_id')->havingRaw('AVG(mastery_percentage) < 40')->pluck('curriculum_node_id')->count()
                 : 0;
             $tAtRisk = ($tNodes->isNotEmpty() && $tStudents->isNotEmpty())
-                ? DB::table('student_subtopic_mastery')->whereIn('student_id', $tStudents)->whereIn('curriculum_node_id', $tNodes)->groupBy('student_id')->havingRaw('AVG(mastery_percentage) < 40')->count(DB::raw('DISTINCT student_id'))
+                ? DB::table('student_subtopic_mastery')->whereIn('student_id', $tStudents)->whereIn('curriculum_node_id', $tNodes)->groupBy('student_id')->havingRaw('AVG(mastery_percentage) < 40')->pluck('student_id')->count()
                 : 0;
             $tAtRiskPct = $tStudents->count() > 0 ? (int) round($tAtRisk / $tStudents->count() * 100) : 0;
 
@@ -676,14 +676,14 @@ class AcademicHeadController extends Controller
                 ->whereIn('curriculum_node_id', $nodeIds->pluck('id'))
                 ->groupBy('curriculum_node_id')
                 ->havingRaw('AVG(mastery_percentage) < 40')
-                ->count(DB::raw('DISTINCT curriculum_node_id'))
+                ->pluck('curriculum_node_id')->count()
             : 0;
         $instStrongCount = $nodeIds->isNotEmpty()
             ? DB::table('student_subtopic_mastery')
                 ->whereIn('curriculum_node_id', $nodeIds->pluck('id'))
                 ->groupBy('curriculum_node_id')
                 ->havingRaw('AVG(mastery_percentage) >= 70')
-                ->count(DB::raw('DISTINCT curriculum_node_id'))
+                ->pluck('curriculum_node_id')->count()
             : 0;
         $atRiskCount = 0;
         if ($nodeIds->isNotEmpty() && $allStudentIds->isNotEmpty()) {
@@ -692,7 +692,7 @@ class AcademicHeadController extends Controller
                 ->whereIn('student_id', $allStudentIds)
                 ->groupBy('student_id')
                 ->havingRaw('AVG(mastery_percentage) < 40')
-                ->count(DB::raw('DISTINCT student_id'));
+                ->pluck('student_id')->count();
         }
 
         // Build topic comparison rows (only topics that both teachers have data for)
