@@ -153,7 +153,8 @@ class DashboardController extends Controller
             ->where('s.is_active', 1)
             ->groupBy('m.student_id')
             ->havingRaw('AVG(m.mastery_percentage) < 40')
-            ->count(DB::raw('DISTINCT m.student_id'));
+            ->pluck('m.student_id')
+            ->count();
 
         if ($atRisk > 50) {
             $alerts[] = ['level' => 'critical', 'category' => 'Students', 'msg' => "{$atRisk} students below 40% mastery — high dropout risk."];
