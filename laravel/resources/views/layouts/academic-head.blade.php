@@ -163,7 +163,7 @@
 
     <div class="sidebar-footer">
         <div class="user-row">
-            <div class="avatar">MK</div>
+            <div class="avatar">{{ collect(explode(' ', Auth::user()->name))->map(fn($w) => strtoupper(substr($w, 0, 1)))->take(2)->implode('') }}</div>
             <div>
                 <div class="name">{{ Auth::user()->name }}</div>
                 <div class="role-tag">Academic Head</div>
@@ -183,10 +183,16 @@
         <div class="breadcrumb">Academic Head · <span>@yield('breadcrumb', 'Dashboard')</span></div>
         <div class="topbar-right">
             <a href="{{ route('academic-head.notifications') }}" class="bell-btn" title="Notifications">🔔</a>
+            @php
+                $__ahName     = Auth::user()->name;
+                $__ahInitials = collect(explode(' ', $__ahName))
+                    ->map(fn($w) => strtoupper(substr($w, 0, 1)))
+                    ->take(2)->implode('');
+            @endphp
             <div class="avatar-chip">
-                <div class="av">MK</div>
+                <div class="av">{{ $__ahInitials }}</div>
                 <div>
-                    <div class="av-name">Dr. Meera Krishnan</div>
+                    <div class="av-name">{{ $__ahName }}</div>
                 </div>
             </div>
         </div>

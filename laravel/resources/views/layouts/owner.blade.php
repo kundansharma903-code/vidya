@@ -116,10 +116,16 @@
             <a href="{{ route('owner.notifications') }}" class="bell-btn" title="Notifications">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             </a>
+            @php
+                $__ownerName     = Auth::user()->name;
+                $__ownerInitials = collect(explode(' ', $__ownerName))
+                    ->map(fn($w) => strtoupper(substr($w, 0, 1)))
+                    ->take(2)->implode('');
+            @endphp
             <div class="user-chip">
-                <div class="avatar">SA</div>
+                <div class="avatar">{{ $__ownerInitials }}</div>
                 <div>
-                    <div class="user-chip-name">Sanjay Agarwal</div>
+                    <div class="user-chip-name">{{ $__ownerName }}</div>
                     <div class="user-chip-role">Owner</div>
                 </div>
             </div>

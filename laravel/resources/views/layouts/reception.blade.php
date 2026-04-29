@@ -86,10 +86,16 @@
     <header class="topbar">
         <div class="breadcrumb">Reception / <span>@yield('breadcrumb', 'Dashboard')</span></div>
         <div class="topbar-right">
+            @php
+                $__recName     = Auth::user()->name;
+                $__recInitials = collect(explode(' ', $__recName))
+                    ->map(fn($w) => strtoupper(substr($w, 0, 1)))
+                    ->take(2)->implode('');
+            @endphp
             <div class="user-chip">
-                <div class="avatar">NV</div>
+                <div class="avatar">{{ $__recInitials }}</div>
                 <div>
-                    <div class="user-chip-name">Neha Verma</div>
+                    <div class="user-chip-name">{{ $__recName }}</div>
                     <div class="user-chip-role">Reception</div>
                 </div>
             </div>

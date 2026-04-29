@@ -12,6 +12,7 @@ class DashboardController extends Controller
     {
         $user        = Auth::user();
         $instituteId = $user->institute_id;
+        $institute   = DB::table('institutes')->where('id', $instituteId)->first();
 
         // ── Teachers ──────────────────────────────────────────────────────
         $teachers = DB::table('users')
@@ -112,7 +113,7 @@ class DashboardController extends Controller
             ->get();
 
         return view('owner.dashboard', compact(
-            'user',
+            'user', 'institute',
             'monthlyRevenue', 'annualRevenue',
             'monthlyCost', 'annualCost',
             'annualProfit', 'margin',
