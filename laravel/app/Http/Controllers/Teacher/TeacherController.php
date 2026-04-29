@@ -375,4 +375,125 @@ class TeacherController extends Controller
         [$user] = $this->scope();
         return view('teacher.help', compact('user'));
     }
+
+    // ── Rankings ─────────────────────────────────────────────────────────────
+    public function rankings(Request $request)
+    {
+        [$user, $instituteId, $batchIds, $subjectId, $nodeIds, $studentIds, $subject] = $this->scope();
+
+        $testId      = $request->get('test_id', '');
+        $batchFilter = $request->get('batch_id', '');
+        $search      = trim($request->get('search', ''));
+
+        $tests = DB::table('tests as t')
+            ->join('test_batches as tb', 'tb.test_id', '=', 't.id')
+            ->where('t.institute_id', $instituteId)
+            ->where('t.status', 'analyzed')
+            ->whereIn('tb.batch_id', $batchIds)
+            ->select('t.id', 't.name', 't.test_code', 't.test_date')
+            ->orderByDesc('t.test_date')
+            ->distinct()
+            ->get();
+
+        if (!$testId && $tests->isNotEmpty()) {
+            $testId = $tests->first()->id;
+        }
+
+        $test = $testId ? DB::table('tests')->where('id', $testId)->where('institute_id', $instituteId)->first() : null;
+
+        $results = collect(); $stats = null; $batches = collect();
+        $maxMarks = 0; $median = 0; $passRate = 0; $totalStudents = 0;
+
+        if ($test) {
+            $maxMarks = $test->total_questions * 4;
+            $batches  = DB::table('batches')->where('institute_id', $instituteId)->whereIn('id', $batchIds)->get(['id', 'name']);
+
+            $query = DB::table('test_results_cache as r')
+                ->join('students as s', 's.id', '=', 'r.student_id')
+                ->join('batches as b',  'b.id', '=', 'r.batch_id')
+                ->where('r.test_id', $testId)
+                ->whereIn('r.student_id', $studentIds)
+                ->orderBy('r.rank_in_batch');
+
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->where('s.name', 'like', "%{$search}%")->orWhere('s.roll_number', 'like', "%{$search}%");
+                });
+            }
+            if ($batchFilter !== '') $query->where('r.batch_id', $batchFilter);
+
+            $results = $query->paginate(50, [
+                'r.student_id','r.total_marks','r.rank_in_batch','r.percentile',
+                'r.total_correct','r.total_incorrect','r.total_unattempted',
+                's.name as student_name','s.roll_number','b.name as batch_name',
+            ])->withQueryString();
+
+            $allMarks    = DB::table('test_results_cache')->where('test_id', $testId)->whereIn('student_id', $studentIds)->orderBy('total_marks')->pluck('total_marks');
+            $totalStudents = $allMarks->count();
+            if ($totalStudents > 0) {
+                $stats  = (object)['highest' => $allMarks->max(), 'lowest' => $allMarks->min(), 'average' => $allMarks->avg()];
+                $median = $allMarks->values()->get((int)floor($totalStudents / 2), 0);
+                $passed = $allMarks->filter(fn($m) => $maxMarks > 0 && $m >= $maxMarks * 0.25)->count();
+                $passRate = (int)round($passed / $totalStudents * 100);
+            }
+        }
+
+        return view('teacher.rankings', compact(
+            'user','subject','tests','test','testId',
+            'results','stats','batches','maxMarks','median','passRate',
+            'totalStudents','search','batchFilter'
+        ));
+    }
+
+    // ── Student Deep-Dive ─────────────────────────────────────────────────────
+    public function studentDeepDive($studentId)
+    {
+        [$user, $instituteId, $batchIds, $subjectId, $nodeIds, $studentIds, $subject] = $this->scope();
+
+        $student = DB::table('students as s')
+            ->join('batches as b', 'b.id', '=', 's.batch_id')
+            ->where('s.id', $studentId)
+            ->where('s.institute_id', $instituteId)
+            ->whereIn('s.batch_id', $batchIds)
+            ->select('s.*', 'b.name as batch_name')
+            ->first();
+        abort_if(!$student, 404);
+
+        $topicMastery = collect();
+        if ($nodeIds->isNotEmpty()) {
+            $topicMastery = DB::table('student_subtopic_mastery as m')
+                ->join('curriculum_nodes as cn', 'cn.id', '=', 'm.curriculum_node_id')
+                ->where('m.student_id', $studentId)
+                ->whereIn('m.curriculum_node_id', $nodeIds)
+                ->select('cn.name as topic_name','cn.code as topic_code',
+                         'm.mastery_percentage','m.total_questions_attempted','m.total_questions_correct')
+                ->orderBy('cn.code')
+                ->get();
+        }
+
+        $masteryBySubject = $subject && $topicMastery->isNotEmpty()
+            ? [$subject->name => $topicMastery->all()]
+            : [];
+
+        $testHistory = DB::table('test_results_cache as rc')
+            ->join('tests as t', 't.id', '=', 'rc.test_id')
+            ->where('rc.student_id', $studentId)
+            ->where('t.institute_id', $instituteId)
+            ->select('t.id','t.name','t.test_code','t.test_date','t.total_questions',
+                     'rc.total_marks','rc.total_correct','rc.total_incorrect',
+                     'rc.rank_in_batch','rc.percentile')
+            ->orderByDesc('t.test_date')
+            ->get();
+
+        $avgMastery  = $topicMastery->isNotEmpty() ? (int)round($topicMastery->avg('mastery_percentage')) : 0;
+        $testsCount  = $testHistory->count();
+        $avgScore    = $testsCount > 0 ? (int)round($testHistory->avg('total_marks')) : 0;
+        $bestRank    = $testsCount > 0 ? $testHistory->min('rank_in_batch') : null;
+        $weakTopics  = $topicMastery->sortBy('mastery_percentage')->take(8)->values();
+
+        return view('teacher.student-deep-dive', compact(
+            'user','subject','student','topicMastery','masteryBySubject',
+            'testHistory','avgMastery','testsCount','avgScore','bestRank','weakTopics'
+        ));
+    }
 }

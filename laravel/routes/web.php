@@ -119,8 +119,10 @@ Route::middleware(['auth', 'scope.institute'])->group(function () {
         Route::get('/teacher-effectiveness/{teacher_id}', [AcademicHeadController::class, 'teacherDeepDive'])->name('academic-head.teacher-deep-dive');
         Route::get('/teacher-assignments',    [AcademicHeadController::class,  'teacherAssignments'])->name('academic-head.teacher-assignments');
         Route::get('/at-risk-students',       [AcademicHeadController::class,  'atRiskStudents'])->name('academic-head.at-risk-students');
-        Route::get('/notifications',          [AcademicHeadController::class,  'notifications'])->name('academic-head.notifications');
-        Route::get('/help',                   [AcademicHeadController::class,  'help'])->name('academic-head.help');
+        Route::get('/notifications',                           [AcademicHeadController::class,  'notifications'])->name('academic-head.notifications');
+        Route::get('/help',                                    [AcademicHeadController::class,  'help'])->name('academic-head.help');
+        Route::get('/rankings',                                [AcademicHeadController::class,  'rankings'])->name('academic-head.rankings');
+        Route::get('/students/{student}/deep-dive',            [AcademicHeadController::class,  'studentDeepDive'])->name('academic-head.student.deep-dive');
     });
 
     // Owner
@@ -135,8 +137,10 @@ Route::middleware(['auth', 'scope.institute'])->group(function () {
         Route::get('/staff-decisions',    [OwnerController::class, 'staffDecisions'])->name('owner.staff-decisions');
         Route::get('/strategic-alerts',   [OwnerController::class, 'strategicAlerts'])->name('owner.strategic-alerts');
         Route::get('/at-risk-students',   [OwnerController::class, 'atRiskStudents'])->name('owner.at-risk-students');
-        Route::get('/notifications',      [OwnerController::class, 'notifications'])->name('owner.notifications');
-        Route::get('/help',               [OwnerController::class, 'help'])->name('owner.help');
+        Route::get('/notifications',                           [OwnerController::class, 'notifications'])->name('owner.notifications');
+        Route::get('/help',                                    [OwnerController::class, 'help'])->name('owner.help');
+        Route::get('/rankings',                                [OwnerController::class, 'rankings'])->name('owner.rankings');
+        Route::get('/students/{student}/deep-dive',            [OwnerController::class, 'studentDeepDive'])->name('owner.student.deep-dive');
     });
 
     // Teacher
@@ -149,8 +153,10 @@ Route::middleware(['auth', 'scope.institute'])->group(function () {
         Route::get('/weak-topics',            [TeacherController::class, 'weakTopics'])->name('teacher.weak-topics');
         Route::get('/topics/{topic_code}',    [TeacherController::class, 'topicDetail'])->name('teacher.topics.detail');
         Route::get('/tests',                  [TeacherController::class, 'tests'])->name('teacher.tests');
-        Route::get('/notifications',          [TeacherController::class, 'notifications'])->name('teacher.notifications');
-        Route::get('/help',                   [TeacherController::class, 'help'])->name('teacher.help');
+        Route::get('/notifications',                           [TeacherController::class, 'notifications'])->name('teacher.notifications');
+        Route::get('/help',                                    [TeacherController::class, 'help'])->name('teacher.help');
+        Route::get('/rankings',                                [TeacherController::class, 'rankings'])->name('teacher.rankings');
+        Route::get('/students/{student}/deep-dive',            [TeacherController::class, 'studentDeepDive'])->name('teacher.student.deep-dive');
     });
 
     // Reception

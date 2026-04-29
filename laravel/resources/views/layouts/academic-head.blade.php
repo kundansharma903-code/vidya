@@ -145,6 +145,9 @@
     {{-- STUDENTS --}}
     <div class="sidebar-section">
         <div class="sidebar-section-label">Students</div>
+        <a href="{{ route('academic-head.rankings') }}" class="nav-item {{ request()->routeIs('academic-head.rankings') ? 'active' : '' }}">
+            <span class="icon">🏅</span> Student Rankings
+        </a>
         <a href="{{ route('academic-head.at-risk-students') }}" class="nav-item {{ request()->routeIs('academic-head.at-risk-students') ? 'active' : '' }}">
             <span class="icon">⚠</span> At-Risk Students
         </a>

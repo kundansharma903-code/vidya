@@ -187,6 +187,9 @@
         <a href="{{ route('teacher.students') }}" class="nav-item {{ request()->routeIs('teacher.students') ? 'active' : '' }}">
             <span class="icon">👥</span> My Students
         </a>
+        <a href="{{ route('teacher.rankings') }}" class="nav-item {{ request()->routeIs('teacher.rankings') ? 'active' : '' }}">
+            <span class="icon">🏅</span> Rankings
+        </a>
         <a href="{{ route('teacher.heatmap') }}" class="nav-item {{ request()->routeIs('teacher.heatmap') ? 'active' : '' }}">
             <span class="icon">⊞</span> Class Heatmap
         </a>
